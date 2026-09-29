@@ -309,6 +309,21 @@ class Node(Base):
     user_usages = relationship("NodeUserUsage", back_populates="node", cascade="all, delete-orphan")
     usages = relationship("NodeUsage", back_populates="node", cascade="all, delete-orphan")
     usage_coefficient = Column(Float, nullable=False, server_default=text("1.0"), default=1)
+    egress = relationship("NodeEgress", back_populates="node", uselist=False, cascade="all, delete-orphan")
+
+
+class NodeEgress(Base):
+    """Optional per-node upstream. The password is Fernet-encrypted at rest."""
+
+    __tablename__ = "node_egress"
+
+    node_id = Column(Integer, ForeignKey("nodes.id", ondelete="CASCADE"), primary_key=True)
+    protocol = Column(String(8), nullable=False)
+    server = Column(String(253), nullable=False)
+    port = Column(Integer, nullable=False)
+    username = Column(String(256), nullable=True)
+    encrypted_password = Column(String(1024), nullable=True)
+    node = relationship("Node", back_populates="egress")
 
 
 class NodeUserUsage(Base):

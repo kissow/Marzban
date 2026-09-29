@@ -65,6 +65,24 @@ class NodeResponse(Node):
     model_config = ConfigDict(from_attributes=True)
 
 
+class NodeEgressModify(BaseModel):
+    """One outbound proxy configuration for one Marzban-Node."""
+    protocol: str = Field(pattern="^(http|socks)$")
+    server: str = Field(min_length=1, max_length=253)
+    port: int = Field(ge=1, le=65535)
+    username: Optional[str] = Field(None, max_length=256)
+    password: Optional[str] = Field(None, max_length=256)
+
+
+class NodeEgressResponse(BaseModel):
+    configured: bool
+    protocol: Optional[str] = None
+    server: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    has_password: bool = False
+
+
 class NodeUsageResponse(BaseModel):
     node_id: Optional[int] = None
     node_name: str

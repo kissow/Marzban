@@ -9,6 +9,8 @@ from app.models.node import NodeStatus
 from app.models.user import UserResponse
 from app.utils.concurrency import threaded_function
 from app.xray.node import XRayNode
+from app.xray.node_egress import for_node
+from app.xray.node_egress_store import read_egress
 from xray_api import XRay as XRayAPI
 from xray_api.types.account import Account, XTLSFlows
 
@@ -201,9 +203,10 @@ def connect_node(node_id, config=None):
 
     with GetDB() as db:
         dbnode = crud.get_node_by_id(db, node_id)
+        if not dbnode:
+            return
+        egress = read_egress(db, dbnode)
 
-    if not dbnode:
-        return
 
     try:
         node = xray.nodes[dbnode.id]
@@ -219,6 +222,7 @@ def connect_node(node_id, config=None):
 
         if config is None:
             config = xray.config.include_db_users()
+        config = for_node(config, egress)
 
         node.start(config)
         version = node.get_version()
@@ -240,9 +244,10 @@ def connect_node(node_id, config=None):
 def restart_node(node_id, config=None):
     with GetDB() as db:
         dbnode = crud.get_node_by_id(db, node_id)
+        if not dbnode:
+            return
+        egress = read_egress(db, dbnode)
 
-    if not dbnode:
-        return
 
     try:
         node = xray.nodes[dbnode.id]
@@ -257,6 +262,7 @@ def restart_node(node_id, config=None):
 
         if config is None:
             config = xray.config.include_db_users()
+        config = for_node(config, egress)
 
         node.restart(config)
         logger.info(f"Xray core of \"{dbnode.name}\" node restarted")

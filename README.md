@@ -53,6 +53,8 @@
  </a>
 </p>
 
+> **Mr.shaw community fork:** This repository preserves the upstream Marzban project and adds per-node health and one residential outbound per Node. Read [Fork features](FORK_FEATURES.md) and the [Changelog](CHANGELOG.md) to see what is implemented and what remains in development. The device limit is planned for a later user-settings release.
+
 <p align="center">
   <a href="https://github.com/gozargah/marzban" target="_blank" rel="noopener noreferrer" >
     <img src="https://github.com/Gozargah/Marzban-docs/raw/master/screenshots/preview.png" alt="Marzban screenshots" width="600" height="auto">

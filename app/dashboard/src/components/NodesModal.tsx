@@ -67,6 +67,8 @@ import { DeleteIcon } from "./DeleteUserModal";
 import { ReloadIcon } from "./Filters";
 import { Icon } from "./Icon";
 import { NodeModalStatusBadge } from "./NodeModalStatusBadge";
+import { NodeEgressCard } from "./NodeEgressCard";
+import { NodeHealthCard } from "./NodeHealthCard";
 
 import { fetch } from "service/http";
 import { Input } from "./Input";
@@ -96,11 +98,11 @@ const PlusIcon = chakra(HeroIconPlusIcon, {
 });
 
 type AccordionInboundType = {
-  toggleAccordion: () => void;
   node: NodeType;
+  isOpen: boolean;
 };
 
-const NodeAccordion: FC<AccordionInboundType> = ({ toggleAccordion, node }) => {
+const NodeAccordion: FC<AccordionInboundType> = ({ node, isOpen }) => {
   const { updateNode, reconnectNode, setDeletingNode } = useNodes();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -145,7 +147,7 @@ const NodeAccordion: FC<AccordionInboundType> = ({ toggleAccordion, node }) => {
       p={1}
       w="full"
     >
-      <AccordionButton px={2} borderRadius="3px" onClick={toggleAccordion}>
+      <AccordionButton px={2} borderRadius="3px">
         <HStack w="full" justifyContent="space-between" pr={2}>
           <Text
             as="span"
@@ -183,7 +185,7 @@ const NodeAccordion: FC<AccordionInboundType> = ({ toggleAccordion, node }) => {
         <AccordionIcon />
       </AccordionButton>
       <AccordionPanel px={2} pb={2}>
-        <VStack pb={3} alignItems="flex-start">
+        {isOpen && <>
           {nodeStatus === "error" && (
             <Alert status="error" size="xs">
               <Box>
@@ -207,9 +209,14 @@ const NodeAccordion: FC<AccordionInboundType> = ({ toggleAccordion, node }) => {
               </Box>
             </Alert>
           )}
-        </VStack>
         <NodeForm
           form={form}
+          afterCert={
+            <VStack w="full" pb={2} alignItems="stretch" spacing={0}>
+              <NodeHealthCard nodeId={node.id!} enabled={node.status === "connected"} />
+              <NodeEgressCard nodeId={node.id!} nodeName={node.name} enabled />
+            </VStack>
+          }
           mutate={mutate}
           isLoading={isLoading}
           submitBtnText={t("nodes.editNode")}
@@ -227,20 +234,27 @@ const NodeAccordion: FC<AccordionInboundType> = ({ toggleAccordion, node }) => {
             </Tooltip>
           }
         />
+        </>}
       </AccordionPanel>
     </AccordionItem>
   );
 };
 
 type AddNodeFormType = {
-  toggleAccordion: () => void;
   resetAccordions: () => void;
+  nodes: NodeType[];
 };
 
-const AddNodeForm: FC<AddNodeFormType> = ({
-  toggleAccordion,
-  resetAccordions,
-}) => {
+const getNextNodeName = (nodes: NodeType[]) => {
+  const suffixes = nodes
+    .map(({ name }) => name.match(/(?:^|[-_\s])(?:s)?(\d+)$/i)?.[1])
+    .filter((value): value is string => Boolean(value))
+    .map(Number)
+    .filter(Number.isFinite);
+  return `Marzban-S${(suffixes.length ? Math.max(...suffixes) : 0) + 1}`;
+};
+
+const AddNodeForm: FC<AddNodeFormType> = ({ resetAccordions, nodes }) => {
   const toast = useToast();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -249,6 +263,7 @@ const AddNodeForm: FC<AddNodeFormType> = ({
     resolver: zodResolver(NodeSchema),
     defaultValues: {
       ...getNodeDefaultValues(),
+      name: getNextNodeName(nodes),
       add_as_new_host: false,
     },
   });
@@ -259,7 +274,11 @@ const AddNodeForm: FC<AddNodeFormType> = ({
         toast
       );
       queryClient.invalidateQueries(FetchNodesQueryKey);
-      form.reset();
+      form.reset({
+        ...getNodeDefaultValues(),
+        name: getNextNodeName(nodes),
+        add_as_new_host: false,
+      });
       resetAccordions();
     },
     onError: (e) => {
@@ -275,7 +294,7 @@ const AddNodeForm: FC<AddNodeFormType> = ({
       p={1}
       w="full"
     >
-      <AccordionButton px={2} borderRadius="3px" onClick={toggleAccordion}>
+      <AccordionButton px={2} borderRadius="3px">
         <Text
           as="span"
           fontWeight="medium"
@@ -313,6 +332,7 @@ type NodeFormType = FC<{
   btnProps?: Partial<ButtonProps>;
   btnLeftAdornment?: ReactNode;
   addAsHost?: boolean;
+  afterCert?: ReactNode;
 }>;
 
 const NodeForm: NodeFormType = ({
@@ -323,6 +343,7 @@ const NodeForm: NodeFormType = ({
   btnProps = {},
   btnLeftAdornment,
   addAsHost = false,
+  afterCert,
 }) => {
   const { t } = useTranslation();
   const [showCertificate, setShowCertificate] = useState(false);
@@ -426,6 +447,8 @@ const NodeForm: NodeFormType = ({
           </Alert>
         )}
 
+        {afterCert}
+
         <HStack w="full">
           <FormControl>
             <CustomInput
@@ -436,7 +459,7 @@ const NodeForm: NodeFormType = ({
               error={form.formState?.errors?.name?.message}
             />
           </FormControl>
-          <HStack px={1}>
+          <HStack px={1} w="auto" flexShrink={0}>
             <Controller
               name="status"
               control={form.control}
@@ -451,8 +474,11 @@ const NodeForm: NodeFormType = ({
                     }
                     textTransform="capitalize"
                   >
-                    <Box mt="6">
+                    <Box mt="6" w="auto" flexShrink={0}>
                       <Switch
+                        size="md"
+                        w="auto"
+                        flexShrink={0}
                         colorScheme="primary"
                         isChecked={field.value !== "disabled"}
                         onChange={(e) => {
@@ -540,51 +566,60 @@ const NodeForm: NodeFormType = ({
 export const NodesDialog: FC = () => {
   const { isEditingNodes, onEditingNodes } = useDashboard();
   const { t } = useTranslation();
-  const [openAccordions, setOpenAccordions] = useState<any>({});
+  const [openNodeIds, setOpenNodeIds] = useState<number[]>([]);
+  const [addNodeOpen, setAddNodeOpen] = useState(false);
   const { data: nodes, isLoading } = useNodesQuery();
 
+  const resetAccordions = () => {
+    setOpenNodeIds([]);
+    setAddNodeOpen(false);
+  };
+
   const onClose = () => {
-    setOpenAccordions({});
+    resetAccordions();
     onEditingNodes(false);
   };
 
-  const toggleAccordion = (index: number | string) => {
-    if (openAccordions[String(index)]) {
-      delete openAccordions[String(index)];
-    } else openAccordions[String(index)] = {};
-
-    setOpenAccordions({ ...openAccordions });
+  const nodeList = nodes || [];
+  const openIndexes = nodeList.flatMap((node, index) =>
+    openNodeIds.includes(node.id!) ? [index] : []
+  );
+  if (addNodeOpen) openIndexes.push(nodeList.length);
+  const onAccordionChange = (value: number | number[]) => {
+    const indexes = Array.isArray(value) ? value : [value];
+    setOpenNodeIds(
+      indexes
+        .filter((index) => index < nodeList.length)
+        .map((index) => nodeList[index].id!)
+    );
+    setAddNodeOpen(indexes.includes(nodeList.length));
   };
 
   return (
     <>
       <Modal isOpen={isEditingNodes} onClose={onClose}>
         <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(10px)" />
-        <ModalContent mx="3" w="fit-content" maxW="3xl">
+        <ModalContent mx="3" w={{ base: "calc(100vw - 24px)", sm: "fit-content" }} maxW="3xl">
           <ModalHeader pt={6}>
             <Icon color="primary">
               <ModalIcon color="white" />
             </Icon>
           </ModalHeader>
           <ModalCloseButton mt={3} />
-          <ModalBody w="440px" pb={6} pt={3}>
+          <ModalBody w={{ base: "calc(100vw - 24px)", sm: "440px" }} maxW="calc(100vw - 24px)" pb={6} pt={3}>
             <Text mb={3} opacity={0.8} fontSize="sm">
               {t("nodes.title")}
             </Text>
             {isLoading && "loading..."}
 
-            <Accordion
-              w="full"
-              allowToggle
-              index={Object.keys(openAccordions).map((i) => parseInt(i))}
-            >
+            <Accordion w="full" allowMultiple index={openIndexes} onChange={onAccordionChange}>
               <VStack w="full">
                 {!isLoading &&
                   nodes &&
-                  nodes.map((node, index) => {
+                  nodes.map((node) => {
                     return (
                       <NodeAccordion
-                        toggleAccordion={() => toggleAccordion(index)}
+                        isOpen={openNodeIds.includes(node.id!)}
                         key={node.name}
                         node={node}
                       />
@@ -592,15 +627,15 @@ export const NodesDialog: FC = () => {
                   })}
 
                 <AddNodeForm
-                  toggleAccordion={() => toggleAccordion((nodes || []).length)}
-                  resetAccordions={() => setOpenAccordions({})}
+                  resetAccordions={resetAccordions}
+                  nodes={nodeList}
                 />
               </VStack>
             </Accordion>
           </ModalBody>
         </ModalContent>
       </Modal>
-      <DeleteNodeModal deleteCallback={() => setOpenAccordions({})} />
+      <DeleteNodeModal deleteCallback={resetAccordions} />
     </>
   );
 };

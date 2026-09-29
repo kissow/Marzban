@@ -163,6 +163,16 @@ class ReSTXRayNode:
         res = self.make_request("/", timeout=3)
         return res.get('core_version')
 
+    def get_health(self):
+        if not self._session_id:
+            raise ConnectionError("Node is not connected")
+        try:
+            return self.make_request("/health", timeout=3)
+        except NodeAPIError as exc:
+            if exc.status_code == 404:
+                raise NotImplementedError("Node does not support health metrics") from exc
+            raise
+
     def start(self, config: XRayConfig):
         if not self.connected:
             self.connect()
@@ -380,6 +390,15 @@ class RPyCXRayNode:
 
     def get_version(self):
         return self.remote.fetch_xray_version()
+
+    def get_health(self):
+        if not self.connected:
+            raise ConnectionError("Node is not connected")
+        result = rpyc.async_(self.connection.root.fetch_health)()
+        result.wait(3)
+        if not result.ready:
+            raise TimeoutError("Node health request timed out")
+        return dict(result.value)
 
     def _prepare_config(self, config: XRayConfig):
         for inbound in config.get("inbounds", []):
