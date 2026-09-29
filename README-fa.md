@@ -109,18 +109,18 @@
 با دستور زیر مرزبان را با دیتابیس SQLite نصب کنید:
 
 ```bash
-sudo bash -c "$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)" @ install
+sudo bash -c "$(curl -sL https://raw.githubusercontent.com/kissow/Marzban-scripts/master/marzban.sh)" @ install
 ```
 
 با دستور زیر مرزبان را با دیتابیس MySQL نصب کنید:
 ```bash
-sudo bash -c "$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)" @ install --database mysql
+sudo bash -c "$(curl -sL https://raw.githubusercontent.com/kissow/Marzban-scripts/master/marzban.sh)" @ install --database mysql
 ```
 
 با دستور زیر مرزبان را با دیتابیس MariaDB نصب کنید:
 
 ```bash
-sudo bash -c "$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)" @ install --database mariadb
+sudo bash -c "$(curl -sL https://raw.githubusercontent.com/kissow/Marzban-scripts/master/marzban.sh)" @ install --database mariadb
 ```
 
 وقتی نصب تمام شد:
@@ -170,7 +170,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 پروژه را clone کنید و dependency ها را نصب کنید. دقت کنید که نسخه پایتون شما Python>=3.8 باشد.
 
 ```bash
-git clone https://github.com/Gozargah/Marzban.git
+git clone https://github.com/kissow/Marzban.git
 cd Marzban
 wget -qO- https://bootstrap.pypa.io/get-pip.py | python3 -
 python3 -m pip install -r requirements.txt
@@ -315,7 +315,7 @@ server {
 
 نصب آخرین ورژن مرزبان کامند:
 ```bash
-sudo bash -c "$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)" @ install-script
+sudo bash -c "$(curl -sL https://raw.githubusercontent.com/kissow/Marzban-scripts/master/marzban.sh)" @ install-script
 ```
 
 راه‌اندازی سرویس پشتیبان گیری:
