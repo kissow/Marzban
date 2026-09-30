@@ -8,6 +8,89 @@
 2. **主面板管理员 API**：统一在 `/api` 下；下列节点相关接口均要求现有超级管理员 Bearer Token，不应直接开放给用户端。认证入口为 `POST /api/admin/token`，按原版现有认证流程取令牌；不要把管理员凭据写到浏览器公开脚本或第三方仓库。
 3. **Node 内部通道**：Marzban 通过原有认证连接向对应 Marzban-Node 取指标并下发配置。REST 模式下 Node 的 `POST /health` 需要有效 `session_id`；RPyC 模式使用 `fetch_health`。它们不是面向第三方的公开监控接口，不新增公网监控端口。Node 的 Xray API 端口与住宅代理商提供的端口也不是同一种端口。
 
+## 原版环境变量、接口边界与捐赠入口
+
+截图中 README 的“变量/描述”表不是 HTTP 接口，而是 Marzban 启动时读取的 `.env` 环境变量。完整默认示例以 [`.env.example`](.env.example) 为准；下面按功能说明，新增配置时必须同时更新 `.env.example` 和本文，不要把真实密码、Token、数据库连接串或钱包私钥提交到仓库。
+
+| 配置项 | 作用 | 是否通常需要改动 |
+| --- | --- | --- |
+| `UVICORN_HOST` / `UVICORN_PORT` | Web/API 监听地址和端口 | 按部署端口改；反代场景通常保持默认监听 |
+| `ALLOWED_ORIGINS` | 浏览器跨域来源白名单 | 有独立前端域名时按需填写 |
+| `SUDO_USERNAME` / `SUDO_PASSWORD` | 初始化管理员信息 | 仅首次初始化使用，优先用 CLI 创建管理员 |
+| `UVICORN_UDS` | Unix Socket 监听路径 | 只在 Nginx/本机 Socket 部署时使用 |
+| `UVICORN_SSL_CERTFILE` / `UVICORN_SSL_KEYFILE` / `UVICORN_SSL_CA_TYPE` | 应用自身 HTTPS 证书、密钥和 CA 类型 | 已由反向代理终止 HTTPS 时通常不填 |
+| `DASHBOARD_PATH` | 管理面板路径前缀 | 需要非根路径部署时设置 |
+| `SQLALCHEMY_DATABASE_URL` | SQLite、PostgreSQL、MySQL/MariaDB 数据库连接 | 迁移数据库时设置，升级不能覆盖 |
+| `SQLALCHEMY_POOL_SIZE` / `SQLIALCHEMY_MAX_OVERFLOW` | 数据库连接池参数 | 高并发时按数据库容量调整 |
+| `XRAY_JSON` | Xray JSON 配置文件路径 | 使用自定义配置时设置 |
+| `XRAY_EXECUTABLE_PATH` / `XRAY_ASSETS_PATH` | Xray 二进制和 Geo 资源路径 | 自定义 Xray 安装路径时设置 |
+| `XRAY_SUBSCRIPTION_URL_PREFIX` / `XRAY_SUBSCRIPTION_PATH` | 用户订阅 URL 的域名/前缀和路径 | 订阅域名或路径变化时设置 |
+| `XRAY_EXCLUDE_INBOUND_TAGS` / `XRAY_FALLBACKS_INBOUND_TAG` | 排除入站标签、备用入站标签 | 使用备用/回落入站时设置 |
+| `TELEGRAM_API_TOKEN` / `TELEGRAM_ADMIN_ID` / `TELEGRAM_LOGGER_CHANNEL_ID` | Telegram 机器人、管理员和日志频道 | 启用 Telegram 功能时填写 |
+| `TELEGRAM_DEFAULT_VLESS_FLOW` / `TELEGRAM_PROXY_URL` | Telegram 默认 VLESS flow 和代理 | 按客户端/网络环境按需设置 |
+| `DISCORD_WEBHOOK_URL` | Discord 通知 Webhook | 需要 Discord 通知时填写 |
+| `CUSTOM_TEMPLATES_DIRECTORY` | 自定义订阅模板目录 | 使用自定义模板时设置 |
+| `CLASH_SUBSCRIPTION_TEMPLATE` / `SUBSCRIPTION_PAGE_TEMPLATE` / `HOME_PAGE_TEMPLATE` | Clash、订阅页、首页模板 | 修改订阅或页面外观时设置 |
+| `V2RAY_SUBSCRIPTION_TEMPLATE` / `V2RAY_SETTINGS_TEMPLATE` | V2Ray 订阅和设置模板 | 使用自定义 V2Ray 输出时设置 |
+| `SINGBOX_SUBSCRIPTION_TEMPLATE` / `SINGBOX_SETTINGS_TEMPLATE` | Sing-box 订阅和设置模板 | 使用自定义 Sing-box 输出时设置 |
+| `CLASH_SETTINGS_TEMPLATE` / `USER_AGENT_TEMPLATE` / `GRPC_USER_AGENT_TEMPLATE` | Clash settings and normal/gRPC User-Agent templates | Optional; change only when client output requires it |
+| `MUX_TEMPLATE` | Mux 配置模板 | 需要自定义 Mux 时设置 |
+| `USE_CUSTOM_JSON_DEFAULT` / `USE_CUSTOM_JSON_FOR_V2RAYN` / `USE_CUSTOM_JSON_FOR_V2RAYNG` / `USE_CUSTOM_JSON_FOR_STREISAND` / `USE_CUSTOM_JSON_FOR_HAPP` | 是否为各客户端使用 JSON 配置 | 只有客户端需要 fragment/mux 等能力时启用 |
+| `SUB_PROFILE_TITLE` / `SUB_SUPPORT_URL` / `SUB_UPDATE_INTERVAL` | 订阅响应头中的标题、支持链接和更新间隔 | 按品牌和客户端需要设置 |
+| `EXTERNAL_CONFIG` | 导入外部 V2Ray 配置 | 确认外部地址可信后使用 |
+| `ACTIVE_STATUS_TEXT` / `EXPIRED_STATUS_TEXT` / `LIMITED_STATUS_TEXT` / `DISABLED_STATUS_TEXT` / `ONHOLD_STATUS_TEXT` | 自定义 Active、Expired、Limited、Disabled、On-Hold 文案 | 需要本地化或品牌文案时设置 |
+| `USERS_AUTODELETE_DAYS` / `USER_AUTODELETE_INCLUDE_LIMITED_ACCOUNTS` | 过期用户自动删除策略 | 谨慎设置；负数表示关闭自动删除 |
+| `NOTIFY_STATUS_CHANGE` / `NOTIFY_USER_CREATED` / `NOTIFY_USER_UPDATED` / `NOTIFY_USER_DELETED` / `NOTIFY_USER_DATA_USED_RESET` / `NOTIFY_USER_SUB_REVOKED` / `NOTIFY_IF_DATA_USAGE_PERCENT_REACHED` / `NOTIFY_IF_DAYS_LEFT_REACHED` / `NOTIFY_LOGIN` / `LOGIN_NOTIFY_WHITE_LIST` | 状态、登录、用量和用户变更通知 | 按通知策略设置 |
+| `DOCS` / `DEBUG` | 开启 OpenAPI 文档、调试日志 | 仅开发/排错时临时开启 |
+| `WEBHOOK_ADDRESS` / `WEBHOOK_SECRET` | 多 Webhook 地址和签名密钥 | 对接外部通知服务时设置 |
+| `NOTIFY_DAYS_LEFT` / `NOTIFY_REACHED_USAGE_PERCENT` | 通知触发的剩余天数/用量百分比 | 按业务提醒策略设置 |
+| `VITE_BASE_API` | 前端构建时使用的 API 基地址 | 前后端域名分离或反代路径变化时设置 |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | 管理员 JWT 有效期 | 按安全策略设置 |
+| `JOB_CORE_HEALTH_CHECK_INTERVAL` / `JOB_RECORD_NODE_USAGES_INTERVAL` / `JOB_RECORD_USER_USAGES_INTERVAL` / `JOB_REVIEW_USERS_INTERVAL` / `JOB_SEND_NOTIFICATIONS_INTERVAL` | 核心、Node、用户用量、审核和通知任务间隔（秒） | 高负载时谨慎调整 |
+
+Compatibility note: the current source reads the historical database-pool variable name `SQLIALCHEMY_MAX_OVERFLOW` (one `A` is missing). Do not replace it with the visually corrected `SQLALCHEMY_MAX_OVERFLOW` unless the code and migration notes are changed together. `RECURRENT_NOTIFICATIONS_TIMEOUT`, `NUMBER_OF_RECURRENT_NOTIFICATIONS`, and `DISABLE_RECORDING_NODE_USAGE` are also supported runtime variables and should be documented when they are enabled.
+
+### 捐赠菜单到底改哪里
+
+当前“捐赠”菜单不是收款接口，也不会调用岚渡云或 BEpusdt。它由三处组成：
+
+1. 菜单项和点击行为：[`app/dashboard/src/components/Header.tsx`](app/dashboard/src/components/Header.tsx) 的 `Link`、`header.donation` 和 `handleOnClose`。
+2. 菜单跳转地址：[`app/dashboard/src/constants/Project.ts`](app/dashboard/src/constants/Project.ts) 的 `DONATION_URL`。当前值是 `https://github.com/Gozargah/Marzban#donation`，因此点击后会打开上游仓库的捐赠锚点；若要指向本 Fork，应改为 `https://github.com/kissow/Marzban#donation`，然后重新构建前端镜像。
+3. README 中展示的钱包地址：[`README.md`](README.md) 和 [`README-zh-cn.md`](README-zh-cn.md) 的 `Donation/捐赠` 小节。修改钱包地址时必须同时更新中英文 README，并核对网络名称，不能只改菜单 URL。
+
+当前前端没有独立的捐赠管理页面，也没有捐赠订单、到账监控或二维码生成逻辑。若以后要接入数字货币收款，应作为独立支付功能开发，不能把钱包地址硬编码到管理端或用户端脚本中。
+
+## 在 GitHub 仓库构建，服务器只拉取镜像
+
+本 Fork 的生产镜像由仓库的 `.github/workflows/build.yml` 构建，不要求每次登录服务器编译。该工作流在 `master` 分支 push 或手动运行时执行后端单元测试、Dashboard TypeScript/Vite 构建，并发布多架构镜像 `ghcr.io/kissow/marzban:latest`；`docs/*`、`feature/*` 等普通分支不会覆盖生产 `latest`。
+
+### 发布一次更新
+
+1. 在本地完成功能、`CHANGELOG.md`、接口文档和验收记录，运行 `git diff --check`、后端测试和前端构建。
+2. 推送到 Fork 的功能/文档分支，确认检查通过后合并到 `master`。不要直接把未验收的分支当作生产镜像。
+3. 打开 GitHub 仓库的 **Actions → Mr.shaw fork image**，选择 `master`，点击 **Run workflow**；或者直接 push `master` 让它自动触发。
+4. 等待 `verify-and-build` 全部成功，再检查该运行对应的 commit SHA 和 `ghcr.io/kissow/marzban:latest` 的发布时间/摘要。Actions 失败或 `latest` 尚未发布时，服务器不要更新。
+
+### 服务器更新（仅拉取，不构建）
+
+先进入服务器实际的 Marzban Compose 目录，确认 `docker-compose.yml` 使用的是 `ghcr.io/kissow/marzban:latest`，并备份 `.env` 与 `/var/lib/marzban`。然后执行：
+
+```bash
+cd /实际的/marzban目录
+cp .env ".env.backup.$(date +%Y%m%d-%H%M%S)"
+sudo tar -C /var/lib -czf "/root/marzban-data-backup-$(date +%Y%m%d-%H%M%S).tar.gz" marzban
+docker compose pull marzban
+docker compose up -d --no-build marzban
+docker compose ps
+docker compose logs --tail=100 marzban
+```
+
+只更新镜像和容器，不执行 `docker compose down -v`，不删除容器卷，不覆盖 `.env`、数据库、证书、端口、Xray 配置或 Node 配置。若部署不是 Compose，而是已安装的 `marzban` 管理脚本，则先执行 `sudo marzban status` 确认脚本版本，再按该脚本的 `update` 流程操作；两种部署方式不要混用。
+
+### 更新后的验收顺序
+
+先确认容器为 `Up`、迁移日志无错误，再登录管理面板检查管理员、用户、订阅、证书、端口和节点；最后逐台检查 Node、订阅导入和住宅出口。只有验收通过后，才在 `CHANGELOG.md` 把“未发布”条目标记为已发布，并记录实际 commit SHA、镜像摘要、备份文件和回滚方法。
+
 ## 本 Fork 节点 API 速查
 
 2026-09-30 `mrshaw-v0.8.4-preview.4`（已发布）仅调整节点弹窗布局：最大宽度 800px，刷新按钮从最右端移至运行指标标题旁边，五项指标铺满可用内容区；API 请求、响应、权限和 Node 通道无变化，无需更新 Node。本机真实组件桌面/手机渲染已确认；Actions `36726339140` 成功，合并 SHA `ee96a1b8afe8fd638d75fe9b5975124268a02736`，`ghcr.io/kissow/marzban:latest` index 摘要 `sha256:e1ad34e5a0b4bd73811cc7d14f05b2f51641da80919a7b9224a0a4b469b58fdd`，amd64/arm64 revision 均匹配；服务器截图仍需在镜像发布后验收。
