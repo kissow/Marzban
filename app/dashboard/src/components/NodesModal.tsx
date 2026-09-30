@@ -599,14 +599,27 @@ export const NodesDialog: FC = () => {
     <>
       <Modal isOpen={isEditingNodes} onClose={onClose}>
         <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(10px)" />
-        <ModalContent mx="3" w={{ base: "calc(100vw - 24px)", sm: "fit-content" }} maxW="3xl">
+        <ModalContent
+          mx={{ base: 3, md: 6 }}
+          w={{
+            base: "calc(100vw - 24px)",
+            md: "calc(100vw - 48px)",
+          }}
+          maxW="1360px"
+        >
           <ModalHeader pt={6}>
             <Icon color="primary">
               <ModalIcon color="white" />
             </Icon>
           </ModalHeader>
           <ModalCloseButton mt={3} />
-          <ModalBody w={{ base: "calc(100vw - 24px)", sm: "440px" }} maxW="calc(100vw - 24px)" pb={6} pt={3}>
+          <ModalBody
+            w="full"
+            maxW="none"
+            px={{ base: 3, md: 6, xl: 8 }}
+            pb={6}
+            pt={3}
+          >
             <Text mb={3} opacity={0.8} fontSize="sm">
               {t("nodes.title")}
             </Text>
