@@ -71,7 +71,7 @@ export const NodeHealthCard: FC<{ nodeId: number; enabled: boolean }> = ({ nodeI
 
   return (
     <Alert status="info" alignItems="stretch" flexDirection="column" mb={4}>
-      <HStack justify="space-between" flexWrap="wrap" gap={2} mb={2}>
+      <HStack justify="flex-start" flexWrap="wrap" gap={2} mb={2}>
         <HStack spacing={2}>
           <AlertIcon mr={0} />
           <Text fontSize="sm" fontWeight="medium">
@@ -90,7 +90,7 @@ export const NodeHealthCard: FC<{ nodeId: number; enabled: boolean }> = ({ nodeI
             </Text>
           ) : metrics ? (
             <>
-              <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={2} w="full" maxW="700px">
+              <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={2} w="full">
                 <Metric
                   label={t("nodes.health.cpu")}
                   value={metrics.cpu_percent === null ? "—" : `${metrics.cpu_percent.toFixed(1)}%`}
