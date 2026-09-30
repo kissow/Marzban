@@ -605,7 +605,7 @@ export const NodesDialog: FC = () => {
             base: "calc(100vw - 24px)",
             md: "calc(100vw - 48px)",
           }}
-          maxW="860px"
+          maxW="800px"
         >
           <ModalHeader pt={6}>
             <Icon color="primary">
