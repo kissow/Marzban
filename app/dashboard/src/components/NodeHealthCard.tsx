@@ -70,25 +70,27 @@ export const NodeHealthCard: FC<{ nodeId: number; enabled: boolean }> = ({ nodeI
       : null;
 
   return (
-    <Alert status="info" alignItems="start" mb={4}>
-      <AlertIcon />
-      <AlertDescription w="full" overflow="hidden">
+    <Alert status="info" alignItems="stretch" flexDirection="column" mb={4}>
+      <HStack justify="space-between" flexWrap="wrap" gap={2} mb={2}>
+        <HStack spacing={2}>
+          <AlertIcon mr={0} />
+          <Text fontSize="sm" fontWeight="medium">
+            {t("nodes.health.title")}
+          </Text>
+        </HStack>
+        <Button size="xs" variant="outline" onClick={() => refetch()} isLoading={isFetching}>
+          {t("nodes.health.refresh")}
+        </Button>
+      </HStack>
+      <AlertDescription w="full" minW={0}>
         <VStack align="stretch" spacing={2}>
-          <HStack justify="space-between" flexWrap="wrap" gap={2}>
-            <Text fontSize="sm" fontWeight="medium">
-              {t("nodes.health.title")}
-            </Text>
-            <Button size="xs" variant="outline" onClick={() => refetch()} isLoading={isFetching}>
-              {t("nodes.health.refresh")}
-            </Button>
-          </HStack>
           {!enabled ? (
             <Text fontSize="sm" color="gray.500">
               {t("nodes.health.offline")}
             </Text>
           ) : metrics ? (
             <>
-              <SimpleGrid columns={{ base: 2, md: 4, xl: 5 }} spacing={2}>
+              <SimpleGrid columns={{ base: 2, md: 3, lg: 5 }} spacing={2} w="full" maxW="820px">
                 <Metric
                   label={t("nodes.health.cpu")}
                   value={metrics.cpu_percent === null ? "—" : `${metrics.cpu_percent.toFixed(1)}%`}
