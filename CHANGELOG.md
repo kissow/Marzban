@@ -2,6 +2,14 @@
 
 本文件仅记录本 Fork 相对 [Gozargah/Marzban](https://github.com/Gozargah/Marzban) 的改动。原作者、许可证和上游 Git 历史均保留；完整功能边界见 [FORK_FEATURES.md](FORK_FEATURES.md)。
 
+## mrshaw-v0.8.4-preview.2（2026-09-30，服务器验收预览版）
+
+- 节点弹窗最大宽度由 1360px 改为 1040px，保持手机端视口内宽度；修正节点运行指标的布局，五张卡片从蓝色区块左侧开始排列、最大宽度 820px，中等宽度自动换行。原有证书、端口、节点表单和住宅出口管理不变。
+- 新增 `MR_SHAW_API_AND_RELEASE.md`，明确环境变量、受保护 API、Node 内部通道及每次更新的文档/测试/镜像发布流程。本次没有改变任何 API 请求或响应。
+- 本地 TypeScript/Vite 构建、17 项后端单元测试和差异空白检查通过。此次仅调整前端及文档，没有 API、数据库结构或 Node 通道变更；无需更新 Node。
+- 配对 Node 基线：`kissow/Marzban-node` 的 `3e9b92e590a1c3c81af59b08d620f4a6209f2b71`。主面板镜像以本次合并提交及成功 Actions 的 OCI revision/digest 为准，不把构建排队当作发布成功。
+- 用户要求先构建并在现有服务器验收本次布局；桌面/手机实际截图尚待服务器反馈，不标记为稳定版。已有部署使用 Fork 的 `marzban update`，先确认自动备份成功，保留数据库、用户、证书、端口、`.env` 和住宅代理配置。
+
 ## mrshaw-v0.8.4-preview.1（2026-09-30，预览版）
 
 - 节点设置弹窗改为最大约 1360px 的响应式宽版，保留原有证书、端口、启用开关、保存和删除等官方 Chakra 界面功能。
