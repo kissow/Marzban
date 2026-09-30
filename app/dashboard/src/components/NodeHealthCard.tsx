@@ -88,7 +88,7 @@ export const NodeHealthCard: FC<{ nodeId: number; enabled: boolean }> = ({ nodeI
             </Text>
           ) : metrics ? (
             <>
-              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={2}>
+              <SimpleGrid columns={{ base: 2, md: 4, xl: 5 }} spacing={2}>
                 <Metric
                   label={t("nodes.health.cpu")}
                   value={metrics.cpu_percent === null ? "—" : `${metrics.cpu_percent.toFixed(1)}%`}

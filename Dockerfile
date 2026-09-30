@@ -12,8 +12,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY ./requirements.txt /code/
-RUN python3 -m pip install --upgrade pip setuptools \
-    && pip install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN python3 -m pip install --upgrade pip 'setuptools==80.9.0'
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 FROM python:$PYTHON_VERSION-slim
 
