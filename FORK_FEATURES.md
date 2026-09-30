@@ -21,6 +21,8 @@
 
 节点指标只由 Marzban 向 Node 通过现有认证通道读取，并由 Marzban 的受保护 API 提供。任何获授权的外部项目均可独立调用该 API；本仓库不包含特定业务系统的对接、别名映射或页面代码。
 
+接口用途、`.env` 配置与 API 的区别，以及每次改动必须同步维护文档的发布流程，见 [Mr.shaw 扩展接口与更新规范](MR_SHAW_API_AND_RELEASE.md)。
+
 ## 本地验证
 
 主面板 Python 单元测试：`python -B -m unittest discover -s tests -v`。管理端执行 `tsc --noEmit` 和 `vite build`。Alembic 迁移需在备份后的测试数据库先升级、回滚，再验证原有节点与用户数据。Node 端还需用其配套测试和 Xray 二进制预检。
