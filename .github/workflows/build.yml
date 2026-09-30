@@ -1,61 +1,67 @@
-name: Build
+name: Mr.shaw fork image
 
 on:
   push:
+    branches:
+      - master
     tags:
-      - "v*.*.*"
+      - mrshaw-v*
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  build-docker-image:
+  verify-and-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup nodejs
-        uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: 16.17.0
-
-      - name: Install dependencies
-        working-directory: ./app/dashboard
-        run: npm ci
-
-      - name: Build project
-        working-directory: ./app/dashboard
-        run: VITE_BASE_API=/api/ npm run build --if-present -- --outDir build --assetsDir statics
-
-      - name: Create 404.html
-        working-directory: ./app/dashboard
-        run: cp ./build/index.html ./build/404.html
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
+          python-version: '3.12'
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Check backend
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - uses: actions/setup-node@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+          node-version: '18'
+          cache: npm
+          cache-dependency-path: app/dashboard/package-lock.json
+      - name: Install dashboard dependencies
+        working-directory: app/dashboard
+        run: npm ci --ignore-scripts
+      - name: Check and build dashboard
+        working-directory: app/dashboard
+        env:
+          VITE_BASE_API: /api/
+        run: |
+          npm exec tsc -- --noEmit
+          npm exec vite -- build --outDir build --assetsDir statics
+          cp build/index.html build/404.html
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Authenticate to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v3
+      - name: Image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/kissow/marzban
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+            type=sha
+            type=ref,event=tag
+      - name: Build and publish fork image
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            gozargah/marzban:latest
-            gozargah/marzban:${{github.ref_name}}
-            ghcr.io/gozargah/marzban:latest
-            ghcr.io/gozargah/marzban:${{github.ref_name}}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

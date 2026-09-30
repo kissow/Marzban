@@ -53,6 +53,8 @@
  </a>
 </p>
 
+> **Mr.shaw community fork:** This repository preserves the upstream Marzban project and adds per-node health and one residential outbound per Node. Read [Fork features](FORK_FEATURES.md) and the [Changelog](CHANGELOG.md) to see what is implemented and what remains in development. The device limit is planned for a later user-settings release.
+
 <p align="center">
   <a href="https://github.com/gozargah/marzban" target="_blank" rel="noopener noreferrer" >
     <img src="https://github.com/Gozargah/Marzban-docs/raw/master/screenshots/preview.png" alt="Marzban screenshots" width="600" height="auto">
@@ -111,18 +113,18 @@ Marzban is user-friendly, feature-rich and reliable. It lets you to create diffe
 Run the following command to install Marzban with SQLite database:
 
 ```bash
-sudo bash -c "$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)" @ install
+sudo bash -c "$(curl -sL https://raw.githubusercontent.com/kissow/Marzban-scripts/master/marzban.sh)" @ install
 ```
 
 Run the following command to install Marzban with MySQL database:
 
 ```bash
-sudo bash -c "$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)" @ install --database mysql
+sudo bash -c "$(curl -sL https://raw.githubusercontent.com/kissow/Marzban-scripts/master/marzban.sh)" @ install --database mysql
 ```
 
 Run the following command to install Marzban with MariaDB database:
 ```bash
-sudo bash -c "$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)" @ install --database mariadb
+sudo bash -c "$(curl -sL https://raw.githubusercontent.com/kissow/Marzban-scripts/master/marzban.sh)" @ install --database mariadb
 ```
 
 Once the installation is complete:
@@ -173,7 +175,7 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 Clone this project and install the dependencies (you need Python >= 3.8)
 
 ```bash
-git clone https://github.com/Gozargah/Marzban.git
+git clone https://github.com/kissow/Marzban.git
 cd Marzban
 wget -qO- https://bootstrap.pypa.io/get-pip.py | python3 -
 python3 -m pip install -r requirements.txt
@@ -348,7 +350,7 @@ Marzban's backup service efficiently zips all necessary files and sends them to 
 
 Install the Latest Version of Marzban Command:
 ```bash
-sudo bash -c "$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)" @ install-script
+sudo bash -c "$(curl -sL https://raw.githubusercontent.com/kissow/Marzban-scripts/master/marzban.sh)" @ install-script
 ```
 
 Setup the Backup Service:

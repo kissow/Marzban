@@ -17,13 +17,32 @@ from app.models.node import (
     NodeSettings,
     NodeStatus,
     NodesUsageResponse,
+    NodeEgressModify,
+    NodeEgressResponse,
 )
 from app.models.proxy import ProxyHost
 from app.utils import responses
+from app.xray.node_health import normalize_node_health
+from app.xray.node_egress import supports_egress
+from app.xray.node_egress_store import public_egress, save_egress
 
 router = APIRouter(
     tags=["Node"], prefix="/api", responses={401: responses._401, 403: responses._403}
 )
+
+
+def require_managed_egress(dbnode):
+    """Ensure the connected Node understands managed outbound profiles."""
+    node = xray.nodes.get(dbnode.id)
+    try:
+        health = node.get_health() if node is not None else None
+    except Exception:
+        health = None
+    if not supports_egress(health):
+        raise HTTPException(
+            status_code=409,
+            detail="Upgrade and connect the paired Marzban-Node before setting egress",
+        )
 
 
 def add_host_if_needed(new_node: NodeCreate, db: Session):
@@ -77,6 +96,72 @@ def get_node(
 ):
     """Retrieve details of a specific node by its ID."""
     return dbnode
+
+
+@router.get("/node/{node_id}/health")
+def get_node_health(
+    dbnode: NodeResponse = Depends(get_node),
+    _: Admin = Depends(Admin.check_sudo_admin),
+):
+    """Read fresh Node metrics over the existing authenticated channel."""
+    unknown = {"node_id": dbnode.id, "status": "unknown", "metrics": None}
+    if dbnode.status == NodeStatus.disabled:
+        return {**unknown, "reason": "disabled"}
+    node = xray.nodes.get(dbnode.id)
+    if node is None:
+        return {**unknown, "reason": "offline"}
+    try:
+        if not node.connected:
+            return {**unknown, "reason": "offline"}
+        metrics = normalize_node_health(node.get_health())
+    except (AttributeError, NotImplementedError):
+        return {**unknown, "reason": "unsupported"}
+    except Exception:
+        logger.warning("Node %s health request failed", dbnode.id, exc_info=True)
+        return {**unknown, "reason": "unavailable"}
+    if metrics is None:
+        return {**unknown, "reason": "invalid_or_stale"}
+    return {"node_id": dbnode.id, "status": "online", "reason": None, "metrics": metrics}
+
+
+@router.get("/node/{node_id}/egress", response_model=NodeEgressResponse)
+def get_node_egress(
+    dbnode = Depends(get_dbnode),
+    db: Session = Depends(get_db),
+    _: Admin = Depends(Admin.check_sudo_admin),
+):
+    return public_egress(db, dbnode)
+
+
+@router.put("/node/{node_id}/egress", response_model=NodeEgressResponse)
+def update_node_egress(
+    settings: NodeEgressModify,
+    bg: BackgroundTasks,
+    dbnode = Depends(get_dbnode),
+    db: Session = Depends(get_db),
+    _: Admin = Depends(Admin.check_sudo_admin),
+):
+    require_managed_egress(dbnode)
+    try:
+        save_egress(db, dbnode, settings.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    bg.add_task(xray.operations.restart_node, node_id=dbnode.id)
+    return public_egress(db, dbnode)
+
+
+@router.delete("/node/{node_id}/egress")
+def remove_node_egress(
+    bg: BackgroundTasks,
+    dbnode = Depends(get_dbnode),
+    db: Session = Depends(get_db),
+    _: Admin = Depends(Admin.check_sudo_admin),
+):
+    if dbnode.egress is not None:
+        db.delete(dbnode.egress)
+        db.commit()
+        bg.add_task(xray.operations.restart_node, node_id=dbnode.id)
+    return {"configured": False}
 
 
 @router.websocket("/node/{node_id}/logs")
