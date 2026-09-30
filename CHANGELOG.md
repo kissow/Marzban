@@ -2,6 +2,12 @@
 
 本文件仅记录本 Fork 相对 [Gozargah/Marzban](https://github.com/Gozargah/Marzban) 的改动。原作者、许可证和上游 Git 历史均保留；完整功能边界见 [FORK_FEATURES.md](FORK_FEATURES.md)。
 
+## 文档补充（2026-09-30，未发布）
+
+- 补齐 `MR_SHAW_API_AND_RELEASE.md` 中原版 `.env.example` 的配置项说明，包括客户端模板、状态/自动清理、通知/Webhook、JWT、调度间隔和开发开关。
+- 明确截图中的“变量/描述”表是运行配置，不是 HTTP API；原版 API 以启用 `DOCS=True` 后的 `/docs`、`/redoc` 和源码路由为准。
+- 记录底部捐赠菜单的真实修改位置：`app/dashboard/src/constants/Project.ts` 的 `DONATION_URL` 控制跳转，README 中英文本的 `Donation/捐赠` 小节控制钱包地址展示；本次没有修改捐赠地址、支付逻辑、数据库、Node 通道或生产配置。
+
 ## mrshaw-v0.8.4-preview.4（2026-09-30，已发布）
 
 - 根据服务器截图将节点设置弹窗最大宽度由 860px 收窄为 800px，原有左右对称内边距及手机端视口规则保留。
