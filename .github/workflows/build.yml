@@ -48,6 +48,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify formal Xray core pin
+        run: |
+          test "$(grep -m1 '^ARG XRAY_CORE_VERSION=' Dockerfile | cut -d= -f2)" = "v26.3.27"
+          test "$(grep -m1 'XRAY_CORE_VERSION=v26.3.27' .github/workflows/build.yml)" != ""
+          ! grep -n -E 'XRAY_CORE_VERSION=v(25|26\.9\.9)' Dockerfile
       - name: Image tags
         id: meta
         uses: docker/metadata-action@v5
@@ -65,3 +70,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            XRAY_CORE_VERSION=v26.3.27
