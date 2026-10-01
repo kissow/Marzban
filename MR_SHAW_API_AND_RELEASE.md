@@ -54,7 +54,7 @@ Compatibility note: the current source reads the historical database-pool variab
 
 ### 捐赠菜单到底改哪里
 
-当前“捐赠”菜单不是收款接口，也不会调用岚渡云或 BEpusdt。它由三处组成：
+当前“捐赠”菜单不是收款接口，也不会调用任何外部收款服务。它由三处组成：
 
 1. 菜单项和点击行为：[`app/dashboard/src/components/Header.tsx`](app/dashboard/src/components/Header.tsx) 的 `Link`、`header.donation` 和 `handleOnClose`。
 2. 菜单跳转地址：[`app/dashboard/src/constants/Project.ts`](app/dashboard/src/constants/Project.ts) 的 `DONATION_URL`。当前值是 `https://github.com/Gozargah/Marzban#donation`，因此点击后会打开上游仓库的捐赠锚点；若要指向本 Fork，应改为 `https://github.com/kissow/Marzban#donation`，然后重新构建前端镜像。
