@@ -92,6 +92,7 @@ export type FormType = Pick<UserCreate, keyof UserCreate> & {
 const formatUser = (user: User): FormType => {
   return {
     ...user,
+    device_limit: user.device_limit ?? 0,
     data_limit: user.data_limit
       ? Number((user.data_limit / 1073741824).toFixed(5))
       : user.data_limit,
@@ -110,6 +111,7 @@ const getDefaultValues = (): FormType => {
   return {
     selected_proxies: Object.keys(defaultInbounds) as ProxyKeys,
     data_limit: null,
+    device_limit: 0,
     expire: null,
     username: "",
     data_limit_reset_strategy: "no_reset",
@@ -175,6 +177,12 @@ const baseSchema = {
     }),
   expire: z.number().nullable(),
   data_limit_reset_strategy: z.string(),
+  device_limit: z
+    .string()
+    .min(0)
+    .or(z.number())
+    .nullable()
+    .transform((value) => Math.max(0, Number(value || 0))),
   inbounds: z.record(z.string(), z.array(z.string())).transform((ins) => {
     Object.keys(ins).forEach((protocol) => {
       if (Array.isArray(ins[protocol]) && !ins[protocol]?.length)
@@ -516,29 +524,67 @@ export const UserDialog: FC<UserDialogProps> = () => {
                           </FormControl>
                         )}
                       </Flex>
-                      <FormControl mb={"10px"}>
-                        <FormLabel>{t("userDialog.dataLimit")}</FormLabel>
-                        <Controller
-                          control={form.control}
-                          name="data_limit"
-                          render={({ field }) => {
-                            return (
-                              <Input
-                                endAdornment="GB"
-                                type="number"
-                                size="sm"
-                                borderRadius="6px"
-                                onChange={field.onChange}
-                                disabled={disabled}
-                                error={
-                                  form.formState.errors.data_limit?.message
-                                }
-                                value={field.value ? String(field.value) : ""}
-                              />
-                            );
-                          }}
-                        />
-                      </FormControl>
+                      <Grid
+                        templateColumns={{
+                          base: "minmax(0, 1fr)",
+                          sm: "repeat(2, minmax(0, 1fr))",
+                        }}
+                        gap={3}
+                        alignItems="start"
+                        mb={"10px"}
+                      >
+                        <GridItem>
+                          <FormControl>
+                            <FormLabel>{t("userDialog.dataLimit")}</FormLabel>
+                            <Controller
+                              control={form.control}
+                              name="data_limit"
+                              render={({ field }) => (
+                                <Input
+                                  endAdornment="GB"
+                                  type="number"
+                                  size="sm"
+                                  borderRadius="6px"
+                                  onChange={field.onChange}
+                                  disabled={disabled}
+                                  error={
+                                    form.formState.errors.data_limit?.message
+                                  }
+                                  value={field.value ? String(field.value) : ""}
+                                />
+                              )}
+                            />
+                          </FormControl>
+                        </GridItem>
+                        <GridItem>
+                          <FormControl>
+                            <FormLabel>{t("userDialog.deviceLimit")}</FormLabel>
+                            <Controller
+                              control={form.control}
+                              name="device_limit"
+                              render={({ field }) => (
+                                <Input
+                                  endAdornment={t("userDialog.devices")}
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  size="sm"
+                                  borderRadius="6px"
+                                  onChange={field.onChange}
+                                  disabled={disabled}
+                                  error={
+                                    form.formState.errors.device_limit?.message
+                                  }
+                                  value={field.value ? String(field.value) : ""}
+                                />
+                              )}
+                            />
+                            <FormHelperText>
+                              {t("userDialog.deviceLimitHelp")}
+                            </FormHelperText>
+                          </FormControl>
+                        </GridItem>
+                      </Grid>
                       <Collapse
                         in={!!(dataLimit && dataLimit > 0)}
                         animateOpacity

@@ -1,12 +1,12 @@
 import re
 from distutils.version import LooseVersion
 
-from fastapi import APIRouter, Depends, Header, Path, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, Response
 from fastapi.responses import HTMLResponse
 
 from app.db import Session, crud, get_db
 from app.dependencies import get_validated_sub, validate_dates
-from app.models.user import SubscriptionUserResponse, UserResponse
+from app.models.user import DeviceStatusResponse, SubscriptionUserResponse, UserResponse
 from app.subscription.share import encode_title, generate_subscription
 from app.templates import render_template
 from config import (
@@ -35,6 +35,41 @@ client_config = {
 router = APIRouter(tags=['Subscription'], prefix=f'/{XRAY_SUBSCRIPTION_PATH}')
 
 
+def register_request_device_if_present(
+    request: Request,
+    db: Session,
+    dbuser: UserResponse,
+    user_agent: str,
+    hwid: str | None,
+) -> None:
+    """Apply device registration consistently to every generated format URL."""
+    if not hwid:
+        return
+    try:
+        # Do not trust X-Forwarded-For here. It is diagnostic metadata only,
+        # and may be supplied by a client unless the proxy chain is configured.
+        device_status = crud.register_user_device(
+            db,
+            dbuser,
+            hwid,
+            client_ip=request.client.host if request.client else None,
+            user_agent=user_agent,
+            device_os=request.headers.get("X-Device-OS"),
+            device_model=request.headers.get("X-Device-Model"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if not device_status["accepted"]:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "Device limit reached for subscription retrieval. Existing "
+                "imported configurations are not disconnected by this check."
+            ),
+        )
+
+
 def get_subscription_user_info(user: UserResponse) -> dict:
     """Retrieve user subscription information including upload, download, total data, and expiry."""
     return {
@@ -51,9 +86,14 @@ def user_subscription(
     request: Request,
     db: Session = Depends(get_db),
     dbuser: UserResponse = Depends(get_validated_sub),
-    user_agent: str = Header(default="")
+    user_agent: str = Header(default=""),
+    hwid: str | None = Header(default=None, alias="X-HWID", max_length=512)
 ):
-    """Provides a subscription link based on the user agent (Clash, V2Ray, etc.)."""
+    """Provide a subscription link while optionally registering a stable HWID.
+
+    Clients that do not send ``X-HWID`` retain the original subscription
+    behavior.  A configured ``reject_new`` policy only applies to new HWIDs.
+    """
     user: UserResponse = UserResponse.model_validate(dbuser)
 
     accept_header = request.headers.get("Accept", "")
@@ -64,6 +104,8 @@ def user_subscription(
                 {"user": user}
             )
         )
+
+    register_request_device_if_present(request, db, dbuser, user_agent, hwid)
 
     crud.update_user_sub(db, dbuser, user_agent)
     response_headers = {
@@ -162,16 +204,27 @@ def user_get_usage(
     return {"usages": usages, "username": dbuser.username}
 
 
+@router.get("/{token}/device-status", response_model=DeviceStatusResponse)
+def user_device_status(
+    db: Session = Depends(get_db),
+    dbuser: UserResponse = Depends(get_validated_sub),
+):
+    """Return the configured limit and active registered-device count."""
+    return crud.get_user_device_status(db, dbuser)
+
+
 @router.get("/{token}/{client_type}")
 def user_subscription_with_client_type(
     request: Request,
     dbuser: UserResponse = Depends(get_validated_sub),
     client_type: str = Path(..., regex="sing-box|clash-meta|clash|outline|v2ray|v2ray-json"),
     db: Session = Depends(get_db),
-    user_agent: str = Header(default="")
+    user_agent: str = Header(default=""),
+    hwid: str | None = Header(default=None, alias="X-HWID", max_length=512)
 ):
     """Provides a subscription link based on the specified client type (e.g., Clash, V2Ray)."""
     user: UserResponse = UserResponse.model_validate(dbuser)
+    register_request_device_if_present(request, db, dbuser, user_agent, hwid)
 
     response_headers = {
         "content-disposition": f'attachment; filename="{user.username}"',

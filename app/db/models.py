@@ -29,7 +29,13 @@ from app.models.proxy import (
     ProxyHostSecurity,
     ProxyTypes,
 )
-from app.models.user import ReminderType, UserDataLimitResetStrategy, UserStatus
+from app.models.user import (
+    DeviceLimitAction,
+    DeviceLimitMode,
+    ReminderType,
+    UserDataLimitResetStrategy,
+    UserStatus,
+)
 
 
 class Admin(Base):
@@ -73,6 +79,22 @@ class User(Base):
         Enum(UserDataLimitResetStrategy),
         nullable=False,
         default=UserDataLimitResetStrategy.no_reset,
+    )
+    device_limit = Column(Integer, nullable=False, default=0, server_default="0")
+    device_limit_mode = Column(
+        Enum(DeviceLimitMode),
+        nullable=False,
+        default=DeviceLimitMode.hwid,
+        server_default=DeviceLimitMode.hwid.value,
+    )
+    device_limit_action = Column(
+        Enum(DeviceLimitAction),
+        nullable=False,
+        default=DeviceLimitAction.log_only,
+        server_default=DeviceLimitAction.log_only.value,
+    )
+    devices = relationship(
+        "UserDevice", back_populates="user", cascade="all, delete-orphan"
     )
     usage_logs = relationship("UserUsageResetLogs", back_populates="user")  # maybe rename it to reset_usage_logs?
     expire = Column(Integer, nullable=True)
@@ -143,6 +165,27 @@ class User(Base):
                     _[proxy.type].append(inbound["tag"])
 
         return _
+
+
+class UserDevice(Base):
+    """A privacy-preserving device registration for a user subscription."""
+
+    __tablename__ = "user_devices"
+    __table_args__ = (
+        UniqueConstraint("user_id", "hwid_hash", name="uq_user_devices_user_hwid"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    hwid_hash = Column(String(64), nullable=False)
+    first_seen = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_seen = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_ip = Column(String(255), nullable=True)
+    user_agent = Column(String(512), nullable=True)
+    device_os = Column(String(64), nullable=True)
+    device_model = Column(String(128), nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+    user = relationship("User", back_populates="devices")
 
 
 excluded_inbounds_association = Table(
