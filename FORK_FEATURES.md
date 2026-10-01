@@ -2,7 +2,7 @@
 
 本仓库由 Mr.shaw 基于 [Gozargah/Marzban](https://github.com/Gozargah/Marzban) 开发，供其他使用者按开源许可证使用。感谢原作者和贡献者；保留原有 Git 历史与 AGPL-3.0 许可证。本说明只记录本 Fork 的扩展，不把这些功能描述为上游官方功能。
 
-开发参考原项目 `CONTRIBUTING.md`：后端继续使用 FastAPI、SQLAlchemy 和 Alembic，前端沿用 React/Chakra UI。当前配对发布分支为 `feature/mrshaw-release`；合并后由 `kissow/Marzban` 的 `master` 作为唯一日常安装、升级和镜像发布源。原作者仓库只保留为历史基线、许可证及致谢来源，普通安装和升级流程不会自动读取其可执行内容。
+开发参考原项目 `CONTRIBUTING.md`：后端继续使用 FastAPI、SQLAlchemy 和 Alembic，前端沿用 React/Chakra UI。`kissow/Marzban` 的 `master` 是唯一日常安装、升级和镜像发布源；临时开发分支合并后删除。原作者仓库只保留为历史基线、许可证及致谢来源，普通安装和升级流程不会自动读取其可执行内容。
 
 ## 前端主题兼容约束
 
