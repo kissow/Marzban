@@ -2,6 +2,22 @@
 
 本文件仅记录本 Fork 相对 [Gozargah/Marzban](https://github.com/Gozargah/Marzban) 的改动。原作者、许可证和上游 Git 历史均保留；完整功能边界见 [FORK_FEATURES.md](FORK_FEATURES.md)。
 
+## 未发布：用户级设备登记限制（2026-10-01）
+
+- 在保留官方 Chakra UI、证书、端口、Node 通道、支付和原有用户数据的前提下，在用户创建/编辑窗口的流量字段右侧加入“限制设备”。
+- 新增 `users.device_limit`、`device_limit_mode`、`device_limit_action` 与 `user_devices` 表；迁移为 `4a9d2e8b7c61_add_user_device_limit.py`。
+- 订阅请求可选携带 `X-HWID`、`X-Device-OS`、`X-Device-Model`；原始 HWID 只保存 SHA-256 哈希。同一 HWID 换公网 IP 不重复计数，同一公网 IP 下不同 HWID 分别计数。
+- 新增 `/{XRAY_SUBSCRIPTION_PATH}/{token}/device-status` 脱敏统计；`reject_new` 超限返回 `429`，`log_only` 超限继续放行；普通订阅和显式客户端格式不能通过切换格式绕过登记。
+- 不带 `X-HWID` 的旧客户端保持原订阅行为；该功能限制订阅请求登记，不是 Xray 实时连接数，也不能断开已导入配置。
+- 本次没有修改 Marzban-Node、Xray `v26.3.27`、证书、端口、支付或住宅出口通道。后端语法检查、完整 pytest（22 passed）、设备限制专项测试（5 passed）、前端 TypeScript/Vite 构建和 SQLite 迁移升级/回滚均已通过；PostgreSQL、真实客户端、Linux 联调和生产验收仍待完成，因此未发布镜像和服务器更新指令。
+
+## 跨仓库更新规范登记（2026-09-30，文档变更）
+
+- 主面板每次代码、API、数据库、UI、配置、Xray 核心或发布脚本变更，都必须与 `kissow/Marzban-node`、`kissow/Marzban-scripts` 及项目资料的变更登记卡配对记录。
+- 本仓库同步维护 `FORK_FEATURES.md`、`MR_SHAW_API_AND_RELEASE.md`、README、测试验收清单、GitHub Actions run、GHCR 镜像 digest 和服务器验收状态；没有对应证据的条目不得写成“已发布”。
+- 接口变化必须逐项记录方法、完整路径、权限、请求/响应、错误码、副作用、Node 兼容和回滚方式；仅 UI/文档变化明确标记 API、数据库、Node 通道、证书和端口无变化。
+- 统一模板见项目资料 `08-跨仓库更新登记模板.md`，三仓库接口和命令总索引见 `09-接口登记索引.md`。本条只规范记录流程，不新增运行时 API、数据库字段或 Node 通道。
+
 ## 正式版核心一致性闸门（2026-09-30，未发布）
 
 - 构建完成后立即读取 Xray 二进制版本，并强制核对为 `v26.3.27`；下载脚本返回错误版本时镜像构建失败。

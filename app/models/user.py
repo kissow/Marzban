@@ -48,6 +48,19 @@ class UserDataLimitResetStrategy(str, Enum):
     year = "year"
 
 
+class DeviceLimitMode(str, Enum):
+    """How a client device is identified for the per-user limit."""
+
+    hwid = "hwid"
+
+
+class DeviceLimitAction(str, Enum):
+    """What to do when a new device cannot be registered."""
+
+    log_only = "log_only"
+    reject_new = "reject_new"
+
+
 class NextPlanModel(BaseModel):
     data_limit: Optional[int] = None
     expire: Optional[int] = None
@@ -65,6 +78,13 @@ class User(BaseModel):
     data_limit_reset_strategy: UserDataLimitResetStrategy = (
         UserDataLimitResetStrategy.no_reset
     )
+    # 0 means disabled.  A stable client HWID is only used when the client
+    # explicitly sends X-HWID; the API never derives a fake device ID from IP.
+    device_limit: int = Field(
+        0, ge=0, description="Maximum registered devices; 0 disables the limit"
+    )
+    device_limit_mode: DeviceLimitMode = DeviceLimitMode.hwid
+    device_limit_action: DeviceLimitAction = DeviceLimitAction.log_only
     inbounds: Dict[ProxyTypes, List[str]] = {}
     note: Optional[str] = Field(None, nullable=True)
     sub_updated_at: Optional[datetime] = Field(None, nullable=True)
@@ -206,6 +226,9 @@ class UserCreate(User):
 class UserModify(User):
     status: UserStatusModify = None
     data_limit_reset_strategy: UserDataLimitResetStrategy = None
+    device_limit: Optional[int] = Field(None, ge=0)
+    device_limit_mode: Optional[DeviceLimitMode] = None
+    device_limit_action: Optional[DeviceLimitAction] = None
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "proxies": {
@@ -334,6 +357,18 @@ class SubscriptionUserResponse(UserResponse):
     inbounds: Dict[ProxyTypes, List[str]] | None = Field(None, exclude=True)
     auto_delete_in_days: int | None = Field(None, exclude=True)
     model_config = ConfigDict(from_attributes=True)
+
+
+class DeviceStatusResponse(BaseModel):
+    """Public device-limit status; no raw or hashed HWID is returned."""
+
+    device_limit: int
+    registered_devices: int
+    remaining_devices: Optional[int] = None
+    device_limit_mode: DeviceLimitMode
+    device_limit_action: DeviceLimitAction
+    hwid_supported: bool
+    enforcement_scope: str
 
 
 class UsersResponse(BaseModel):

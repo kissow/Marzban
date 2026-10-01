@@ -53,7 +53,7 @@
  </a>
 </p>
 
-> **Mr.shaw 开源二开版：** 保留原版 Marzban 功能，新增逐节点状态和每个 Node 独立的一条住宅 IP 出口。已实现内容、限制与后续计划请看 [二开功能](FORK_FEATURES.md) 和 [更新记录](CHANGELOG.md)。设备数量限制留待后续在用户设置中开发。
+> **Mr.shaw 开源二开版：** 保留原版 Marzban 功能，新增逐节点状态、每个 Node 独立的一条住宅 IP 出口和用户级设备登记限制。已实现内容、接口、测试证据与发布状态请看 [二开功能](FORK_FEATURES.md)、[更新记录](CHANGELOG.md)、[接口与发布规范](MR_SHAW_API_AND_RELEASE.md) 和 [仓库更新流程](docs/REPOSITORY_UPDATE_FLOW.md)。设备限制目前已完成本地测试，但仍未完成真实客户端、Linux/PostgreSQL 和生产验收，尚未作为正式版本发布。
 
 <p align="center">
   <a href="https://github.com/gozargah/marzban" target="_blank" rel="noopener noreferrer" >

@@ -18,8 +18,12 @@
 - 节点管理界面展示上述指标。没有可靠的节点级在线用户来源时，`active_users` 为 `null`，不得把主面板总在线数或服务器 TCP 连接数冒充该值。
 - `/api/node/{node_id}/egress` 按节点 ID 保存唯一一条 HTTP/SOCKS 出站配置；新增更多 Node 时各自独立配置住宅 IP。凭据加密存储，API 不回显密码；下发时只给该节点的配置副本添加 `marzban_node_extensions` 扩展，不修改主面板 Xray 配置。
 - 配置前先通过 Node 健康响应确认 `managed-outbounds-v1` 能力；不支持的旧 Node 不接收新配置。删除出站会触发节点重启以恢复原路由。
+- 用户设置新增设备限制字段：`device_limit`、`device_limit_mode`、`device_limit_action`；普通订阅和指定客户端格式订阅可通过 `X-HWID`、`X-Device-OS`、`X-Device-Model` 登记设备，并由 `/device-status` 返回脱敏统计。原始 HWID 只保存 SHA-256 哈希；`reject_new` 超限返回 `429`，`log_only` 只记录不拒绝。
+- 设备限制只属于主面板的订阅请求登记，不修改 Marzban-Node、Xray、证书、端口或已导入配置的连接；不带 `X-HWID` 的旧客户端保持兼容，也不承诺所有客户端都会发送该请求头。
 
-此功能必须与同一开发系列的 `kissow/Marzban-node` 配对。HTTP 代理只承载 TCP，UDP 保持原路由。尚未实现住宅代理自动健康检查、故障摘除、按用户/分组路由或真实节点级活跃用户统计。请先在隔离测试节点验证，不要直接替换生产面板和数据库。
+设备限制代码已完成并通过本地专项测试（5 passed）及完整 pytest（22 passed）；SQLite 迁移升级/回滚也已通过。当前仍处于测试中，必须继续完成 PostgreSQL 迁移、并发、Linux 隔离环境和真实客户端验收，才可进入正式发布。它不是 Xray 实时连接数限制。
+
+住宅出口功能必须与同一开发系列的 `kissow/Marzban-node` 配对。HTTP 代理只承载 TCP，UDP 保持原路由。尚未实现住宅代理自动健康检查、故障摘除、按用户/分组路由或真实节点级活跃用户统计。请先在隔离测试节点验证，不要直接替换生产面板和数据库。
 
 节点指标只由 Marzban 向 Node 通过现有认证通道读取，并由 Marzban 的受保护 API 提供。任何获授权的外部项目均可独立调用该 API；本仓库不包含特定业务系统的对接、别名映射或页面代码。
 

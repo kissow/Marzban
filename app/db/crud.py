@@ -2,11 +2,13 @@
 Functions for managing proxy hosts, users, user templates, nodes, and administrative tasks.
 """
 
+import hashlib
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 
 from sqlalchemy import and_, delete, func, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query, Session, joinedload
 from sqlalchemy.sql.functions import coalesce
 
@@ -26,6 +28,7 @@ from app.db.models import (
     ProxyTypes,
     System,
     User,
+    UserDevice,
     UserTemplate,
     UserUsageResetLogs,
 )
@@ -383,6 +386,9 @@ def create_user(db: Session, user: UserCreate, admin: Admin = None) -> User:
         proxies=proxies,
         status=user.status,
         data_limit=(user.data_limit or None),
+        device_limit=user.device_limit,
+        device_limit_mode=user.device_limit_mode,
+        device_limit_action=user.device_limit_action,
         expire=(user.expire or None),
         admin=admin,
         data_limit_reset_strategy=user.data_limit_reset_strategy,
@@ -508,6 +514,15 @@ def update_user(db: Session, dbuser: User, modify: UserModify) -> User:
 
     if modify.data_limit_reset_strategy is not None:
         dbuser.data_limit_reset_strategy = modify.data_limit_reset_strategy.value
+
+    if modify.device_limit is not None:
+        dbuser.device_limit = modify.device_limit
+
+    if modify.device_limit_mode is not None:
+        dbuser.device_limit_mode = modify.device_limit_mode
+
+    if modify.device_limit_action is not None:
+        dbuser.device_limit_action = modify.device_limit_action
 
     if modify.on_hold_timeout is not None:
         dbuser.on_hold_timeout = modify.on_hold_timeout
@@ -644,6 +659,156 @@ def update_user_sub(db: Session, dbuser: User, user_agent: str) -> User:
     db.commit()
     db.refresh(dbuser)
     return dbuser
+
+
+def _enum_value(value):
+    """Return the persisted value for either an enum member or a string."""
+    return getattr(value, "value", value)
+
+
+def _device_status(user: User, registered_devices: int) -> dict:
+    """Build a device-limit status without exposing a raw or hashed HWID."""
+    limit = int(user.device_limit or 0)
+    return {
+        "device_limit": limit,
+        "registered_devices": registered_devices,
+        "remaining_devices": None if limit == 0 else max(limit - registered_devices, 0),
+        "device_limit_mode": _enum_value(user.device_limit_mode),
+        "device_limit_action": _enum_value(user.device_limit_action),
+        "hwid_supported": True,
+        "enforcement_scope": "subscription_requests_with_hwid",
+    }
+
+
+def get_user_device_status(db: Session, dbuser: User) -> dict:
+    """Return the active device count and configured limit for a user."""
+    registered_devices = (
+        db.query(UserDevice)
+        .filter(UserDevice.user_id == dbuser.id, UserDevice.revoked_at.is_(None))
+        .count()
+    )
+    return _device_status(dbuser, registered_devices)
+
+
+def register_user_device(
+    db: Session,
+    dbuser: User,
+    hwid: str,
+    client_ip: Optional[str] = None,
+    user_agent: Optional[str] = None,
+    device_os: Optional[str] = None,
+    device_model: Optional[str] = None,
+) -> dict:
+    """Register a stable client HWID and apply the user's new-device policy.
+
+    Only a SHA-256 digest is persisted.  The request's IP is metadata for
+    diagnostics and is deliberately not used as the device identity, so a
+    device may change networks without consuming another slot.
+    """
+    normalized_hwid = (hwid or "").strip()
+    if not normalized_hwid:
+        raise ValueError("hwid must not be empty")
+    if len(normalized_hwid) > 512:
+        raise ValueError("hwid must be 512 characters or fewer")
+
+    # Lock the user row so concurrent subscription requests cannot both pass
+    # the device-limit check before inserting the same user's next device.
+    user_id = dbuser.id
+    locked_user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .with_for_update()
+        .one()
+    )
+    hwid_hash = hashlib.sha256(normalized_hwid.encode("utf-8")).hexdigest()
+    device = (
+        db.query(UserDevice)
+        .filter(
+            UserDevice.user_id == locked_user.id,
+            UserDevice.hwid_hash == hwid_hash,
+        )
+        .one_or_none()
+    )
+    active_devices = (
+        db.query(UserDevice)
+        .filter(UserDevice.user_id == locked_user.id, UserDevice.revoked_at.is_(None))
+        .count()
+    )
+    is_new_device = device is None or device.revoked_at is not None
+    limit = int(locked_user.device_limit or 0)
+    action = _enum_value(locked_user.device_limit_action)
+    rejected = is_new_device and limit > 0 and active_devices >= limit and action == "reject_new"
+
+    if rejected:
+        # The SELECT ... FOR UPDATE starts a transaction even though this
+        # branch makes no write.  Roll it back to release the row lock, then
+        # load a fresh instance so expired attributes cannot leak into the
+        # response or into the caller's next database operation.
+        db.rollback()
+        locked_user = db.query(User).filter(User.id == user_id).one()
+        active_devices = (
+            db.query(UserDevice)
+            .filter(UserDevice.user_id == user_id, UserDevice.revoked_at.is_(None))
+            .count()
+        )
+    else:
+        now = datetime.utcnow()
+        metadata = {
+            "last_seen": now,
+            "last_ip": (client_ip or "")[:255] or None,
+            "user_agent": (user_agent or "")[:512] or None,
+            "device_os": (device_os or "")[:64] or None,
+            "device_model": (device_model or "")[:128] or None,
+            "revoked_at": None,
+        }
+        if device is None:
+            device = UserDevice(
+                user_id=locked_user.id,
+                hwid_hash=hwid_hash,
+                first_seen=now,
+                **metadata,
+            )
+            db.add(device)
+            active_devices += 1
+        else:
+            was_revoked = device.revoked_at is not None
+            for key, value in metadata.items():
+                setattr(device, key, value)
+            if was_revoked:
+                active_devices += 1
+        try:
+            db.commit()
+        except IntegrityError:
+            # A database without effective row-level locking (notably SQLite)
+            # can race on the unique key. Re-read after rollback so duplicate
+            # requests for one HWID never produce a false second slot.
+            db.rollback()
+            device = (
+                db.query(UserDevice)
+                .filter(
+                    UserDevice.user_id == user_id,
+                    UserDevice.hwid_hash == hwid_hash,
+                )
+                .one_or_none()
+            )
+            active_devices = (
+                db.query(UserDevice)
+                .filter(UserDevice.user_id == user_id, UserDevice.revoked_at.is_(None))
+                .count()
+            )
+            if device is None:
+                raise
+            # The unique constraint means another request registered this
+            # exact HWID first. It is no longer a new slot for this request.
+            is_new_device = False
+            rejected = False
+
+    status = _device_status(locked_user, active_devices)
+    status.update({
+        "accepted": not rejected,
+        "is_new_device": is_new_device,
+    })
+    return status
 
 
 def reset_all_users_data_usage(db: Session, admin: Optional[Admin] = None):
