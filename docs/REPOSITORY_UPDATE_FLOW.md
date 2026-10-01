@@ -18,7 +18,7 @@
 变更编号：MR-20261001-DEVICE-LIMIT
 日期：2026-10-01
 标题：在官方 Chakra 用户结构中加入用户级 HWID 设备登记限制
-状态：测试中 / 未发布
+状态：测试版镜像已发布，服务器验收待完成
 
 主面板：kissow/Marzban
 Node：kissow/Marzban-node（无变化，不需要配对更新）
@@ -64,9 +64,17 @@ Xray：v26.3.27，保持正式基线，不升级 v26.9.9
 - SQLite upgrade/downgrade：通过。
 - `git diff --check`：通过。
 
-以下仍未完成，因此不能发布：PostgreSQL 真实迁移、Linux 隔离环境、并发锁验证、V2RayN/Clash/Hiddify/Shadowrocket 的真实 HWID 兼容矩阵、生产服务器验收，以及本次修复后的 GitHub Actions 和 GHCR 镜像发布。此前 Actions run `36832627106` 因专项测试误用未声明的 pytest 而失败，run `36835708735` 又发现锁定 APScheduler 导入 `pkg_resources`、但新版 setuptools 已移除该模块，run `36836757035` 再发现测试导入数据库模型隐式调用 `/usr/local/bin/xray`；三轮失败都必须保留在发布记录中，避免只依赖本地环境或误把“代码已推送”当成“镜像已发布”。当前已统一测试框架、锁定 `setuptools<81`，并为设备测试加入仅限测试的 Xray 导入隔离，下一轮必须用同一条 `unittest discover` 命令复验。
+以下仍未完成：PostgreSQL 真实迁移、Linux 隔离环境、并发锁验证、V2RayN/Clash/Hiddify/Shadowrocket 的真实 HWID 兼容矩阵和生产服务器验收。因此本次只标记为“测试版镜像已发布”，不能标记为稳定发布。此前 Actions run `36832627106` 因专项测试误用未声明的 pytest 而失败，run `36835708735` 又发现锁定 APScheduler 导入 `pkg_resources`、但新版 setuptools 已移除该模块，run `36836757035` 再发现测试导入数据库模型隐式调用 `/usr/local/bin/xray`；三轮失败及修复方式均保留在 `CHANGELOG.md`，避免只依赖本地环境或误把“代码已推送”当成“镜像已发布”。
 
-## 5. 发布顺序
+## 5. 本次成功构建与防复发证据
+
+- Actions run：`36838046078`；源 commit：`071819b1d90ca5bcf9dac903d11748ac8080dec7`。
+- `ghcr.io/kissow/marzban:latest` OCI index：`sha256:290994ba997ed3120e494814717520db6216d9b615df4b54bc6f8bf147771b07`。
+- 架构清单：amd64 `sha256:e17e7dab19d8cf637e2586b65a913ec9c2c758708628be31115411dece67a7e7`；arm64 `sha256:49b1183f193113cdb6c0b5e4d8254b86bce6c0d56e261ec3fe0032fd423c5ff9`。两者 OCI revision 均为 `071819b1d90ca5bcf9dac903d11748ac8080dec7`。
+- 成功步骤包括后端 `unittest`（22 tests，`OK`）、前端类型检查/构建、Xray 版本闸门、多架构 Docker 构建和 GHCR 发布。
+- 固定防复发闸门：失败必须登记 run、步骤、根因、修复提交和复跑结果；新增测试必须使用 CI 实际命令；依赖必须在干净环境安装；测试导入不得隐式要求生产二进制；发布后必须核对 index/架构 digest 与 OCI revision，最后才允许进入服务器验收。
+
+## 6. 发布顺序
 
 1. 先更新代码、接口文档、CHANGELOG、README/FORK_FEATURES 和本登记卡。
 2. 执行后端测试、前端构建、迁移升级/回滚和 `git diff --check`。
