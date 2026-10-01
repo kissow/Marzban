@@ -9,13 +9,14 @@
 - 完整保留官方 Marzban 的 Chakra UI 主题配置、颜色 token、字体、深浅色模式和响应式断点；不修改 `app/dashboard/chakra.config.ts` 来为扩展功能另建视觉系统。
 - 新增功能只能组合官方 Chakra 组件和项目已有的表单、按钮、提示、Accordion、间距及状态样式，并放入原有 Node 设置流程；不得使用独立 CSS、硬编码品牌色、独立字体或另一套卡片/布局规范。
 - 原版节点名称、启用开关、节点地址、节点端口、API 端口、使用系数、证书查看/下载、保存、删除和重连交互必须继续保留。扩展的健康信息和出站配置只是原节点表单中的附加区块。
+- 节点未连接时，原节点弹窗在标题栏下方、证书区上方显示后端失败/连接原因；原因为空时显示状态兜底文案。`connecting`/`error` 可从该位置点击原版重连接口，`disabled` 不显示可操作重连按钮。
 - `mrshaw-v0.8.4-preview.3` 将节点弹窗最大宽度调整为 860px、指标区域最大宽度调整为 700px；手机端继续使用原视口断点。仅布局变化，不要求更新 Node。
 - `mrshaw-v0.8.4-preview.4`（已发布）将节点弹窗最大宽度调整为 800px，刷新按钮移至运行指标标题旁边，五项指标铺满可用内容区，不额外保留右侧空白；原主题、左右内边距、手机端断点和原功能不变。Actions `36726339140` 已发布 `ghcr.io/kissow/marzban:latest`。
 
 ## 当前扩展
 
 - `/api/node/{node_id}/health` 经现有 Node 认证通道读取对应节点的 CPU、内存、磁盘和运行时间；过期或无效快照不显示为实时值。
-- 节点管理界面展示上述指标。没有可靠的节点级在线用户来源时，`active_users` 为 `null`，不得把主面板总在线数或服务器 TCP 连接数冒充该值。
+- 节点管理界面展示上述指标。Node 原始快照没有可靠的节点级在线用户来源时，`active_users` 为 `null`；主面板有 `NodeUserUsage` 采样时补充最近 2 小时有正流量的去重用户，并明确标注不是实时在线数；不得把主面板总在线数或服务器 TCP 连接数冒充该值。
 - `/api/node/{node_id}/egress` 按节点 ID 保存唯一一条 HTTP/SOCKS 出站配置；新增更多 Node 时各自独立配置住宅 IP。凭据加密存储，API 不回显密码；下发时只给该节点的配置副本添加 `marzban_node_extensions` 扩展，不修改主面板 Xray 配置。
 - 配置前先通过 Node 健康响应确认 `managed-outbounds-v1` 能力；不支持的旧 Node 不接收新配置。删除出站会触发节点重启以恢复原路由。
 - 用户设置新增设备限制字段：`device_limit`、`device_limit_mode`、`device_limit_action`；普通订阅和指定客户端格式订阅可通过 `X-HWID`、`X-Device-OS`、`X-Device-Model` 登记设备，并由 `/device-status` 返回脱敏统计。原始 HWID 只保存 SHA-256 哈希；`reject_new` 超限返回 `429`，`log_only` 只记录不拒绝。

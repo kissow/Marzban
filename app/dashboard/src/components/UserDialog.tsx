@@ -93,6 +93,7 @@ const formatUser = (user: User): FormType => {
   return {
     ...user,
     device_limit: user.device_limit ?? 0,
+    device_limit_action: user.device_limit_action ?? "log_only",
     data_limit: user.data_limit
       ? Number((user.data_limit / 1073741824).toFixed(5))
       : user.data_limit,
@@ -112,6 +113,7 @@ const getDefaultValues = (): FormType => {
     selected_proxies: Object.keys(defaultInbounds) as ProxyKeys,
     data_limit: null,
     device_limit: 0,
+    device_limit_action: "reject_new",
     expire: null,
     username: "",
     data_limit_reset_strategy: "no_reset",
@@ -183,6 +185,7 @@ const baseSchema = {
     .or(z.number())
     .nullable()
     .transform((value) => Math.max(0, Number(value || 0))),
+  device_limit_action: z.enum(["log_only", "reject_new"]),
   inbounds: z.record(z.string(), z.array(z.string())).transform((ins) => {
     Object.keys(ins).forEach((protocol) => {
       if (Array.isArray(ins[protocol]) && !ins[protocol]?.length)
@@ -581,6 +584,35 @@ export const UserDialog: FC<UserDialogProps> = () => {
                             />
                             <FormHelperText>
                               {t("userDialog.deviceLimitHelp")}
+                            </FormHelperText>
+                            <FormLabel mt={3}>{t("userDialog.deviceLimitAction")}</FormLabel>
+                            <Controller
+                              control={form.control}
+                              name="device_limit_action"
+                              render={({ field }) => (
+                                <Select
+                                  size="sm"
+                                  {...field}
+                                  disabled={disabled}
+                                  bg={disabled ? "gray.100" : "transparent"}
+                                  _dark={{ bg: disabled ? "gray.600" : "transparent" }}
+                                  sx={{
+                                    option: {
+                                      backgroundColor: colorMode === "dark" ? "#222C3B" : "white",
+                                    },
+                                  }}
+                                >
+                                  <option value="reject_new">
+                                    {t("userDialog.deviceLimitActionRejectNew")}
+                                  </option>
+                                  <option value="log_only">
+                                    {t("userDialog.deviceLimitActionLogOnly")}
+                                  </option>
+                                </Select>
+                              )}
+                            />
+                            <FormHelperText>
+                              {t("userDialog.deviceLimitActionHelp")}
                             </FormHelperText>
                           </FormControl>
                         </GridItem>

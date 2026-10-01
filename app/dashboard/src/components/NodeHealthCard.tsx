@@ -28,6 +28,9 @@ type NodeHealthResponse = {
     disk_used_bytes: number | null;
     uptime_seconds: number | null;
     active_users: number | null;
+    active_users_window_hours?: number;
+    active_users_sampled_at?: string | null;
+    active_users_reason?: string | null;
     memory_scope: string;
     disk_scope: string;
   } | null;
@@ -127,6 +130,11 @@ export const NodeHealthCard: FC<{ nodeId: number; enabled: boolean }> = ({ nodeI
                 {t("nodes.health.scope", {
                   memory: metrics.memory_scope,
                   disk: metrics.disk_scope,
+                })}
+              </Text>
+              <Text fontSize="xs" color="gray.500">
+                {t("nodes.health.activeUsersScope", {
+                  hours: metrics.active_users_window_hours ?? 2,
                 })}
               </Text>
             </>

@@ -32,6 +32,8 @@ export type DataLimitResetStrategy =
   | "month"
   | "year";
 
+export type DeviceLimitAction = "log_only" | "reject_new";
+
 export type UserInbounds = {
   [key: string]: string[];
 };
@@ -41,6 +43,7 @@ export type User = {
   data_limit: number | null;
   data_limit_reset_strategy: DataLimitResetStrategy;
   device_limit: number;
+  device_limit_action: DeviceLimitAction;
   on_hold_expire_duration: number | null;
   lifetime_used_traffic: number;
   username: string;
@@ -61,6 +64,7 @@ export type UserCreate = Pick<
   | "data_limit"
   | "data_limit_reset_strategy"
   | "device_limit"
+  | "device_limit_action"
   | "on_hold_expire_duration"
   | "username"
   | "status"

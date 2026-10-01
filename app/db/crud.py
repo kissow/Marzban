@@ -49,6 +49,12 @@ from app.utils.helpers import calculate_expiration_days, calculate_usage_percent
 from config import NOTIFY_DAYS_LEFT, NOTIFY_REACHED_USAGE_PERCENT, USERS_AUTODELETE_DAYS
 
 
+# NodeUserUsage is written once per completed/current hour by the usage job.
+# A two-hour window therefore gives the health card a useful recent sample
+# without presenting it as a real-time connection count.
+NODE_ACTIVE_USERS_WINDOW_HOURS = 2
+
+
 def add_default_host(db: Session, inbound: ProxyInbound):
     """
     Adds a default host to a proxy inbound.
@@ -968,6 +974,55 @@ def get_all_users_usages(
             pass
 
     return list(usages.values())
+
+
+def get_node_active_users(
+        db: Session,
+        node_id: int,
+        window_hours: int = NODE_ACTIVE_USERS_WINDOW_HOURS,
+) -> Dict[str, Optional[Union[int, str]]]:
+    """Return a sampled, node-scoped active-user summary.
+
+    Marzban-Node does not expose a reliable live connection/user count.  The
+    panel already records per-user traffic in ``node_user_usages`` once per
+    hour, so the health endpoint can safely report distinct users with
+    positive traffic in a recent two-hour window.  ``None`` means that the
+    node has no usage sample in the window; ``0`` means a sample exists but
+    no currently valid user had traffic in it.
+    """
+    window_hours = max(1, int(window_hours))
+    start = datetime.utcnow() - timedelta(hours=window_hours)
+
+    sampled_at = db.query(func.max(NodeUserUsage.created_at)).filter(
+        NodeUserUsage.node_id == node_id,
+        NodeUserUsage.created_at >= start,
+    ).scalar()
+
+    base = {
+        "active_users_window_hours": window_hours,
+        "active_users_sampled_at": sampled_at.isoformat() if sampled_at else None,
+    }
+    if sampled_at is None:
+        return {
+            **base,
+            "active_users": None,
+            "active_users_reason": "no_recent_node_sample",
+        }
+
+    active_users = db.query(func.count(func.distinct(NodeUserUsage.user_id))).join(
+        User, User.id == NodeUserUsage.user_id
+    ).filter(
+        NodeUserUsage.node_id == node_id,
+        NodeUserUsage.created_at >= start,
+        NodeUserUsage.used_traffic > 0,
+        User.status.notin_([UserStatus.disabled, UserStatus.expired]),
+    ).scalar() or 0
+
+    return {
+        **base,
+        "active_users": int(active_users),
+        "active_users_reason": None,
+    }
 
 
 def update_user_status(db: Session, dbuser: User, status: UserStatus) -> User:

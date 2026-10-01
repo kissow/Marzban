@@ -101,13 +101,15 @@ docker compose logs --tail=100 marzban
 | --- | --- | --- |
 | `GET /api/nodes` | 列出节点及 ID，供选择 `node_id`；原版接口 | 无 |
 | `GET /api/node/settings` | 原版证书设置，节点安装时使用；不要删除或替换 | 无 |
-| `GET /api/node/{node_id}/health` | 返回此 Node 的 `status`、`reason`、`metrics`，包含采样时间、CPU、内存、根目录磁盘、运行时间、数据来源；离线或过期时 `metrics=null` | 通过已认证通道读取 Node；不写数据 |
+| `GET /api/node/{node_id}/health` | 返回此 Node 的 `status`、`reason`、`metrics`，包含采样时间、CPU、内存、根目录磁盘、运行时间、数据来源；主面板可在 `metrics` 中补充最近 2 小时有正流量的去重用户及采样原因；离线或过期时 `metrics=null` | 通过已认证通道读取 Node，并查询主面板 `NodeUserUsage`；不写数据 |
 | `GET /api/node/{node_id}/egress` | 返回 `configured`、协议、服务器、端口、用户名、`has_password`；**不返回密码** | 无 |
 | `PUT /api/node/{node_id}/egress` | 保存该 Node 唯一的 HTTP/SOCKS5 代理。请求字段：`protocol`（`http`/`socks`）、`server`（代理商域名或 IP）、`port`（1–65535）、可选成对的 `username`/`password`。同用户名且密码留空可保留原密码 | 检查 Node 是否声明 `managed-outbounds-v1`；加密保存密码并异步重启该 Node。旧 Node 不支持时返回 409，参数不合法返回 422 |
 | `DELETE /api/node/{node_id}/egress` | 清除该 Node 的代理设置 | 删除配置并异步重启该 Node，恢复原有默认路由 |
 | `POST /api/node/{node_id}/reconnect` | 原版重连入口；排查离线 Node | 异步重连 |
 
-Node 响应 `source=node-runtime` 与 `capabilities=["managed-outbounds-v1"]` 是扩展兼容性标记。主面板仅接受新鲜且合法的快照（超过 15 秒或异常则不展示为实时数据）；`active_users` 当前没有可靠节点级来源，返回 `null`，页面显示“未提供节点级连接数据”。不要把总在线数或 TCP 连接数填充进去。
+Node 响应 `source=node-runtime` 与 `capabilities=["managed-outbounds-v1"]` 是扩展兼容性标记。主面板仅接受新鲜且合法的快照（超过 15 秒或异常则不展示为实时数据）。Node 原始快照没有可靠的在线用户来源时，`active_users` 为 `null`；主面板可根据最近 2 小时 `NodeUserUsage` 的正流量记录补充去重用户数，并返回 `active_users_window_hours`、`active_users_sampled_at` 和 `active_users_reason`。该值不是 Xray 实时在线连接数，不得用总在线数或 TCP 连接数填充。
+
+节点管理弹窗在节点标题栏下方、证书区上方显示连接状态与原因：`node.message` 有值时优先显示后端原因，否则按 `connecting`、`error`、`disabled` 显示本地化兜底文案。`connecting` 和 `error` 状态提供“重新连接”按钮并调用上面的 `POST /api/node/{node_id}/reconnect`；`disabled` 只显示停用原因，不提供重连按钮。此项只改官方 Chakra UI 的原节点弹窗，不删除证书、端口、启用、保存或删除字段。
 
 住宅代理地址从代理服务商取得，不填 Marzban 主面板地址、Node 地址、Node 的服务端口或 Xray API 端口。HTTP 代理只接管默认 TCP；UDP 仍按原路由。保存操作只是排队重启，HTTP 成功**不等于**住宅代理可连通：还要复查 Node 运行日志、出站公网 IP 和原订阅可用性。本功能尚无代理失效自动摘除和自动回滚。
 

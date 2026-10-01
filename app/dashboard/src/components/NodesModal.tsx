@@ -129,6 +129,9 @@ const NodeAccordion: FC<AccordionInboundType> = ({ node, isOpen }) => {
       onSuccess: () => {
         queryClient.invalidateQueries(FetchNodesQueryKey);
       },
+      onError: (error) => {
+        generateErrorMessage(error, toast);
+      },
     }
   );
 
@@ -137,6 +140,10 @@ const NodeAccordion: FC<AccordionInboundType> = ({ node, isOpen }) => {
     : node.status
     ? node.status
     : "error";
+  const connectionReason =
+    nodeStatus === "connecting"
+      ? t("nodes.connectionReason.connecting")
+      : node.message?.trim() || t(`nodes.connectionReason.${nodeStatus}`);
 
   return (
     <AccordionItem
@@ -186,27 +193,39 @@ const NodeAccordion: FC<AccordionInboundType> = ({ node, isOpen }) => {
       </AccordionButton>
       <AccordionPanel px={2} pb={2}>
         {isOpen && <>
-          {nodeStatus === "error" && (
-            <Alert status="error" size="xs">
-              <Box>
-                <HStack w="full">
-                  <AlertIcon w={4} />
-                  <Text marginInlineEnd={0}>{node.message}</Text>
-                </HStack>
-                <HStack justifyContent="flex-end" w="full">
-                  <Button
-                    size="sm"
-                    aria-label="reconnect node"
-                    leftIcon={<ReloadIcon />}
-                    onClick={() => reconnect()}
-                    disabled={isReconnecting}
-                  >
-                    {isReconnecting
-                      ? t("nodes.reconnecting")
-                      : t("nodes.reconnect")}
-                  </Button>
-                </HStack>
+          {nodeStatus !== "connected" && (
+            <Alert
+              status={nodeStatus === "error" ? "error" : "warning"}
+              size="xs"
+              alignItems="flex-start"
+              flexWrap="wrap"
+              gap={2}
+              mb={2}
+            >
+              <AlertIcon w={4} mt={1} />
+              <Box flex="1" minW={{ base: "calc(100% - 2rem)", sm: 0 }}>
+                <Text fontWeight="medium">
+                  {t("nodes.connectionReason")}
+                </Text>
+                <Text wordBreak="break-word" overflowWrap="anywhere">
+                  {connectionReason}
+                </Text>
               </Box>
+              {nodeStatus !== "disabled" && (
+                <Button
+                  size="sm"
+                  aria-label={t("nodes.reconnect")}
+                  leftIcon={<ReloadIcon />}
+                  onClick={() => reconnect()}
+                  disabled={isReconnecting}
+                  flexShrink={0}
+                  ml={{ base: "auto", sm: 0 }}
+                >
+                  {isReconnecting
+                    ? t("nodes.reconnecting")
+                    : t("nodes.reconnect")}
+                </Button>
+              )}
             </Alert>
           )}
         <NodeForm

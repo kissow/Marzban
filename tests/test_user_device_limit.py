@@ -3,7 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import create_engine
@@ -26,8 +26,8 @@ os.chdir(_TEST_RUNTIME.name)
 try:
     from app.db.base import Base
     from app.db import crud
-    from app.db.models import User
-    from app.models.user import DeviceLimitAction
+    from app.db.models import NodeUserUsage, User
+    from app.models.user import DeviceLimitAction, UserStatus
 finally:
     os.chdir(_TEST_PREVIOUS_CWD)
 
@@ -147,6 +147,44 @@ class UserDeviceLimitTests(unittest.TestCase):
         self.assertTrue(restored["accepted"])
         self.assertTrue(restored["is_new_device"])
         self.assertEqual(restored["registered_devices"], 1)
+
+    def test_node_active_users_uses_recent_distinct_positive_traffic(self):
+        first = self.make_user()
+        second = User(username="device_test_user_second", status=UserStatus.active)
+        expired = User(username="device_test_user_expired", status=UserStatus.expired)
+        self.db.add_all([second, expired])
+        self.db.commit()
+        now = datetime.utcnow()
+        self.db.add_all([
+            NodeUserUsage(node_id=42, user_id=first.id, created_at=now, used_traffic=10),
+            NodeUserUsage(node_id=42, user_id=first.id, created_at=now - timedelta(hours=1), used_traffic=20),
+            NodeUserUsage(node_id=42, user_id=second.id, created_at=now, used_traffic=0),
+            NodeUserUsage(node_id=42, user_id=expired.id, created_at=now, used_traffic=50),
+        ])
+        self.db.commit()
+
+        summary = crud.get_node_active_users(self.db, 42)
+
+        self.assertEqual(summary["active_users"], 1)
+        self.assertEqual(summary["active_users_window_hours"], 2)
+        self.assertIsNone(summary["active_users_reason"])
+
+    def test_node_active_users_distinguishes_no_sample_from_zero(self):
+        self.assertIsNone(crud.get_node_active_users(self.db, 404)["active_users"])
+        now = datetime.utcnow()
+        user = self.make_user()
+        self.db.add(NodeUserUsage(
+            node_id=405,
+            user_id=user.id,
+            created_at=now - timedelta(minutes=5),
+            used_traffic=0,
+        ))
+        self.db.commit()
+
+        summary = crud.get_node_active_users(self.db, 405)
+
+        self.assertEqual(summary["active_users"], 0)
+        self.assertIsNone(summary["active_users_reason"])
 
 
 if __name__ == "__main__":

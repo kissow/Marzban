@@ -2,6 +2,13 @@
 
 本文件仅记录本 Fork 相对 [Gozargah/Marzban](https://github.com/Gozargah/Marzban) 的改动。原作者、许可证和上游 Git 历史均保留；完整功能边界见 [FORK_FEATURES.md](FORK_FEATURES.md)。
 
+## 测试中：节点连接原因与重连入口、近期活跃用户统计（2026-10-01，未发布）
+
+- 节点弹窗在标题栏下方、证书区上方显示连接失败/连接中/已停用的原因；优先展示后端 `node.message`，为空时使用状态兜底文案。
+- `connecting` 和 `error` 状态提供“重新连接”按钮，继续调用原有 `POST /api/node/{node_id}/reconnect`；`disabled` 仅展示停用原因。官方 Chakra UI 结构、证书、端口、启用、保存、删除和原节点字段保持不变。
+- 节点健康接口的 `active_users` 由主面板在有 `NodeUserUsage` 小时采样时补充为最近 2 小时有正流量的去重用户；无采样为 `null`，有采样但无符合条件用户为 `0`，不是 Xray 实时在线连接数。
+- 本轮仅修改主面板 UI、健康统计及文档；Marzban-Node、脚本、Xray `v26.3.27`、证书、端口、支付和住宅出口通道无代码变化。前端 `tsc --noEmit` 与 `npm run build` 已通过；Python 语法检查和 Node 健康专项测试已通过，设备专项仍受本机依赖环境限制，未发布、未构建镜像、未提供服务器更新命令。
+
 ## 测试版：用户级设备登记限制（2026-10-01，CI/GHCR 已发布，服务器验收待完成）
 
 - 在保留官方 Chakra UI、证书、端口、Node 通道、支付和原有用户数据的前提下，在用户创建/编辑窗口的流量字段右侧加入“限制设备”。

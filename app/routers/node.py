@@ -101,6 +101,7 @@ def get_node(
 @router.get("/node/{node_id}/health")
 def get_node_health(
     dbnode: NodeResponse = Depends(get_node),
+    db: Session = Depends(get_db),
     _: Admin = Depends(Admin.check_sudo_admin),
 ):
     """Read fresh Node metrics over the existing authenticated channel."""
@@ -121,6 +122,10 @@ def get_node_health(
         return {**unknown, "reason": "unavailable"}
     if metrics is None:
         return {**unknown, "reason": "invalid_or_stale"}
+    # The Node health channel intentionally does not claim a live connection
+    # count. Enrich the snapshot with the main panel's hourly per-node usage
+    # sample so the UI can show a clearly labelled recent activity metric.
+    metrics.update(crud.get_node_active_users(db, dbnode.id))
     return {"node_id": dbnode.id, "status": "online", "reason": None, "metrics": metrics}
 
 
