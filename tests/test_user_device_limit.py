@@ -1,13 +1,42 @@
+import atexit
+import os
+import sys
+import tempfile
 import unittest
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db.base import Base
-from app.db import crud
-from app.db.models import User
-from app.models.user import DeviceLimitAction
+# Importing the full database model graph initializes the application's Xray
+# object. Backend CI installs Python dependencies only; it does not start or
+# install an Xray service just to import a unit test. Keep this test isolated
+# with a temporary version command and test config, without changing production
+# defaults.
+ROOT = Path(__file__).resolve().parents[1]
+_TEST_RUNTIME = tempfile.TemporaryDirectory(prefix="marzban-device-test-")
+_TEST_PREVIOUS_CWD = os.getcwd()
+(_TEST_VERSION_FILE := Path(_TEST_RUNTIME.name) / "version").write_text(
+    "print('Xray 26.3.27')\n", encoding="utf-8"
+)
+os.environ["XRAY_EXECUTABLE_PATH"] = sys.executable
+os.environ["XRAY_JSON"] = str(ROOT / "xray_config.json")
+os.chdir(_TEST_RUNTIME.name)
+try:
+    from app.db.base import Base
+    from app.db import crud
+    from app.db.models import User
+    from app.models.user import DeviceLimitAction
+finally:
+    os.chdir(_TEST_PREVIOUS_CWD)
+
+
+def _cleanup_test_runtime():
+    _TEST_RUNTIME.cleanup()
+
+
+atexit.register(_cleanup_test_runtime)
 
 
 class UserDeviceLimitTests(unittest.TestCase):

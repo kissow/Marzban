@@ -22,6 +22,7 @@
 - [ ] `python -B -m unittest discover -s tests -v`
 - [ ] CI 使用的测试命令与本地测试命令一致；新增测试默认使用仓库现有 `unittest` 规范，未引入未声明的 pytest/fixture 依赖。
 - [ ] 干净 CI 安装后导入所有测试模块；旧依赖若使用已移除的兼容模块（例如 `pkg_resources`），必须在依赖文件中显式锁定兼容版本。
+- [ ] 单元测试导入数据库/应用模块时不隐式依赖 `/usr/local/bin/xray` 等生产服务；外部二进制依赖必须在测试步骤显式准备或由测试专用桩隔离。
 - [ ] 管理端 `npm run typecheck` 和 `npm run build`
 - [ ] `git diff --check`
 - [ ] 订阅、二维码、用户到期、节点、证书和端口回归通过。
