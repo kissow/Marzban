@@ -1,4 +1,7 @@
 APScheduler==3.9.1.post1
+# APScheduler 3.9 imports pkg_resources; keep the compatible setuptools API
+# until APScheduler is upgraded as a separate, tested dependency change.
+setuptools<81
 Deprecated==1.2.13
 Jinja2==3.1.4
 MarkupSafe==2.1.1

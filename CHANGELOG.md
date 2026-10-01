@@ -18,6 +18,13 @@
 - 已将专项测试统一改为仓库现有的 `unittest.TestCase`、`setUp/tearDown` 规范，未新增第三方测试依赖；本条修复提交后必须重新跑完整 unittest，再等待 Actions 成功后才允许使用 `latest`。
 - 防重复检查：新增测试必须使用 CI 实际执行的测试命令；如果要使用 pytest，必须同时把 pytest 固定写入依赖并修改 CI 命令，不能只在本地环境偶然通过。
 
+### 第二轮 CI 失败复盘（run `36835708735`）
+
+- 第一轮测试框架修复后，正式 Actions 仍在 `Check backend` 阶段失败，前端、Docker 和 GHCR 步骤仍未执行。
+- 根因是锁定的 `APScheduler==3.9.1.post1` 仍导入 `pkg_resources`，而 CI 安装的最新版 setuptools 已移除该兼容模块，导致 `ModuleNotFoundError: No module named 'pkg_resources'`。
+- 已在 `requirements.txt` 明确加入 `setuptools<81`，让干净 CI 和 Docker 构建使用同一套可复现依赖；这不是跳过测试，也不改变运行时业务逻辑。
+- 防重复检查：每次依赖升级或 Python 版本变更后，必须在干净环境执行完整 `unittest discover`；锁定依赖若依赖已移除的兼容模块，必须在依赖文件中显式锁定兼容版本，不能依赖 CI 当时碰巧解析出的 setuptools 版本。
+
 ## 跨仓库更新规范登记（2026-09-30，文档变更）
 
 - 主面板每次代码、API、数据库、UI、配置、Xray 核心或发布脚本变更，都必须与 `kissow/Marzban-node`、`kissow/Marzban-scripts` 及项目资料的变更登记卡配对记录。
