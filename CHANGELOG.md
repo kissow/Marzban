@@ -9,7 +9,14 @@
 - 订阅请求可选携带 `X-HWID`、`X-Device-OS`、`X-Device-Model`；原始 HWID 只保存 SHA-256 哈希。同一 HWID 换公网 IP 不重复计数，同一公网 IP 下不同 HWID 分别计数。
 - 新增 `/{XRAY_SUBSCRIPTION_PATH}/{token}/device-status` 脱敏统计；`reject_new` 超限返回 `429`，`log_only` 超限继续放行；普通订阅和显式客户端格式不能通过切换格式绕过登记。
 - 不带 `X-HWID` 的旧客户端保持原订阅行为；该功能限制订阅请求登记，不是 Xray 实时连接数，也不能断开已导入配置。
-- 本次没有修改 Marzban-Node、Xray `v26.3.27`、证书、端口、支付或住宅出口通道。后端语法检查、完整 pytest（22 passed）、设备限制专项测试（5 passed）、前端 TypeScript/Vite 构建和 SQLite 迁移升级/回滚均已通过；PostgreSQL、真实客户端、Linux 联调和生产验收仍待完成，因此未发布镜像和服务器更新指令。
+- 本次没有修改 Marzban-Node、Xray `v26.3.27`、证书、端口、支付或住宅出口通道。后端 `unittest discover`（22 passed）、设备限制专项测试（5 passed）、前端 TypeScript/Vite 构建和 SQLite 迁移升级/回滚均已通过；PostgreSQL、真实客户端、Linux 联调和生产验收仍待完成，因此未发布镜像和服务器更新指令。
+
+## CI 构建失败复盘（2026-10-01，已修复代码，待重新构建）
+
+- 正式分支合并提交 `9a040201cbe0bc2e783e4ab44e7069ca6fe443a1` 触发 Actions run `36832627106`，在 `Check backend` 阶段失败，后续前端构建和 GHCR 发布未执行。
+- 原因是仓库工作流使用 `python -m unittest discover -s tests -p 'test_*.py' -v`，新增 `tests/test_user_device_limit.py` 却依赖未声明的 `pytest` fixture；干净 CI 环境没有 pytest，导致 `ModuleNotFoundError`。
+- 已将专项测试统一改为仓库现有的 `unittest.TestCase`、`setUp/tearDown` 规范，未新增第三方测试依赖；本条修复提交后必须重新跑完整 unittest，再等待 Actions 成功后才允许使用 `latest`。
+- 防重复检查：新增测试必须使用 CI 实际执行的测试命令；如果要使用 pytest，必须同时把 pytest 固定写入依赖并修改 CI 命令，不能只在本地环境偶然通过。
 
 ## 跨仓库更新规范登记（2026-09-30，文档变更）
 

@@ -20,6 +20,7 @@
 ## 测试
 
 - [ ] `python -B -m unittest discover -s tests -v`
+- [ ] CI 使用的测试命令与本地测试命令一致；新增测试默认使用仓库现有 `unittest` 规范，未引入未声明的 pytest/fixture 依赖。
 - [ ] 管理端 `npm run typecheck` 和 `npm run build`
 - [ ] `git diff --check`
 - [ ] 订阅、二维码、用户到期、节点、证书和端口回归通过。
@@ -29,6 +30,7 @@
 ## CI、镜像和发布
 
 - [ ] GitHub Actions 成功，记录 workflow、run ID、源 commit 和失败重试结果。
+- [ ] 如 Actions 失败，记录失败步骤、根因、修复提交和重新构建结果；失败状态不得写成镜像已发布。
 - [ ] `ghcr.io/kissow/marzban` 的 tag/index digest、amd64/arm64 digest 与 OCI revision 对应源 commit。
 - [ ] 镜像能在干净环境拉取并启动；没有把 Actions 排队或代码已推送误写成已发布。
 - [ ] `CHANGELOG.md`、`FORK_FEATURES.md`、README、接口文档和项目验收清单状态一致。

@@ -57,14 +57,14 @@ Xray：v26.3.27，保持正式基线，不升级 v26.9.9
 ## 4. 已完成的本地证据
 
 - `python -m compileall -q app`：通过。
-- 完整 pytest：`22 passed`。
+- 完整后端测试：`python -m unittest discover -s tests -p 'test_*.py' -v`，目标为 `22 passed`。
 - 设备限制专项测试：`5 passed`。
 - 前端 TypeScript 检查和 `npm run build`：通过。
 - Alembic：`4a9d2e8b7c61` 为唯一 head。
 - SQLite upgrade/downgrade：通过。
 - `git diff --check`：通过。
 
-以下仍未完成，因此不能发布：PostgreSQL 真实迁移、Linux 隔离环境、并发锁验证、V2RayN/Clash/Hiddify/Shadowrocket 的真实 HWID 兼容矩阵、生产服务器验收、GitHub Actions 和 GHCR 镜像发布。
+以下仍未完成，因此不能发布：PostgreSQL 真实迁移、Linux 隔离环境、并发锁验证、V2RayN/Clash/Hiddify/Shadowrocket 的真实 HWID 兼容矩阵、生产服务器验收，以及本次修复后的 GitHub Actions 和 GHCR 镜像发布。此前 Actions run `36832627106` 因专项测试误用未声明的 pytest 而在后端测试阶段失败；修复后必须用同一条 `unittest discover` 命令复验，不能只依赖本地测试环境。
 
 ## 5. 发布顺序
 

@@ -21,7 +21,7 @@
 - 用户设置新增设备限制字段：`device_limit`、`device_limit_mode`、`device_limit_action`；普通订阅和指定客户端格式订阅可通过 `X-HWID`、`X-Device-OS`、`X-Device-Model` 登记设备，并由 `/device-status` 返回脱敏统计。原始 HWID 只保存 SHA-256 哈希；`reject_new` 超限返回 `429`，`log_only` 只记录不拒绝。
 - 设备限制只属于主面板的订阅请求登记，不修改 Marzban-Node、Xray、证书、端口或已导入配置的连接；不带 `X-HWID` 的旧客户端保持兼容，也不承诺所有客户端都会发送该请求头。
 
-设备限制代码已完成并通过本地专项测试（5 passed）及完整 pytest（22 passed）；SQLite 迁移升级/回滚也已通过。当前仍处于测试中，必须继续完成 PostgreSQL 迁移、并发、Linux 隔离环境和真实客户端验收，才可进入正式发布。它不是 Xray 实时连接数限制。
+设备限制代码已完成并通过本地专项测试（5 passed）及 `unittest discover`（22 passed）；SQLite 迁移升级/回滚也已通过。2026-10-01 的首次正式 Actions 因专项测试误用未声明的 pytest 在后端阶段失败，已改为与 CI 一致的 unittest 规范，需等待修复后的 Actions 和 GHCR 证据后才能进入正式发布。它不是 Xray 实时连接数限制。
 
 住宅出口功能必须与同一开发系列的 `kissow/Marzban-node` 配对。HTTP 代理只承载 TCP，UDP 保持原路由。尚未实现住宅代理自动健康检查、故障摘除、按用户/分组路由或真实节点级活跃用户统计。请先在隔离测试节点验证，不要直接替换生产面板和数据库。
 
