@@ -1,5 +1,11 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
+## 2026-10-02 发布状态（镜像已发布，服务器验收待完成）
+
+- 主面板 `master`：`a6efaa8eafd82c3f68d2ff29074cf9eeb1ec8ae0`；Actions `36975384550` 成功；GHCR index `sha256:42af5defdd9f325b0244c4be182ae6f77513d1d4e2d3572ea009215508de8dae`。
+- 配对 Node `master`：`d6f3bec204a75085939b5b4e25fa6502f5946ae5`；Actions `36975383911` 成功；GHCR index `sha256:f2a9e93ca3168abb3559f3e48baa98d02e6377fb8d4a480407f447a97bbbf774`。
+- 两仓库均固定 Xray `v26.3.27`；本地测试、迁移升级/回滚和镜像构建已完成，服务器尚未更新，因此不能标记为稳定发布。
+
 ## MR-20261002-01：本地活动与策略同步，未发布
 
 主面板工作基线 `654e6c3`（master），Node 工作基线 `140fecb`（feature/mrshaw-release）；均为本地未提交修改。scripts 运行时代码无变化，配对文档更新。

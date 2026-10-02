@@ -1,6 +1,6 @@
 # Node 活动统计与设备策略合同
 
-状态：2026-10-02，本地开发与验收中；未推送、未构建镜像、未部署。维护者：Mr.shaw。
+状态：2026-10-02，镜像已发布，服务器验收待完成；维护者：Mr.shaw。主面板 Actions `36975384550`、Node Actions `36975383911` 均成功，配对 commit 和 GHCR digest 已登记；服务器尚未部署。
 
 ## 数据流与认证
 
@@ -66,4 +66,4 @@ Node 启动、重启及重新连接后同步；管理员创建、修改、删除
 
 两仓库运行 `python -B -m unittest discover -s tests -v`；主面板运行 `npm exec tsc -- --noEmit` 和 `npm exec vite -- build --outDir build-ci`。Node 设置 `XRAY_TEST_BINARY` 可运行固定核心真实配置预检及 TLS Stats RPC。UI 必须以原 Chakra 组件在桌面/手机渲染后审阅，再推送。
 
-发布前补录两仓库 commit、Actions run、镜像 tag/index/架构 digest、OCI revision 和服务器验收；当前不提供已发布结论。脚本无运行时变更，核心继续固定 `v26.3.27`。已有 Fork 部署发布后使用 `marzban update` / `marzban-node update`，官方旧安装首次切换使用 adopt，新机才使用 install。保留数据库、环境文件、证书、现有端口、配置及数据卷；本轮包含设备凭据数据库迁移，必须先备份后升级。回退到先前配对镜像与保存的配置；旧面板忽略新增指标字段，旧 Node 被识别为不支持新增方法。
+发布记录已补录两仓库 commit、Actions run、镜像 tag/index/架构 digest 和 OCI revision；服务器验收仍待完成，当前不能写成稳定发布。脚本无运行时变更，核心继续固定 `v26.3.27`。已有 Fork 部署发布后使用 `marzban update` / `marzban-node update`，官方旧安装首次切换使用 adopt，新机才使用 install。保留数据库、环境文件、证书、现有端口、配置及数据卷；本轮包含设备凭据数据库迁移，必须先备份后升级。回退到先前配对镜像与保存的配置；旧面板忽略新增指标字段，旧 Node 被识别为不支持新增方法。

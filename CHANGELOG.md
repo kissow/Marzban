@@ -1,20 +1,21 @@
 # Mr.shaw Marzban Fork 更新记录
 
-## 2026-10-02 设备专属凭据与 Node 新连接拒绝（本地开发，未发布）
+## 2026-10-02 设备专属凭据与 Node 新连接拒绝（镜像已发布，服务器验收待完成）
 
 - `reject_new` 用户按 HWID 生成独立的 VMess/VLESS UUID 或 Trojan/Shadowsocks 密码；订阅请求必须带 `X-HWID`，超额或未登记设备不会获得新的订阅凭据。
 - 主核心和每个已连接 Node 只加载已登记设备账号，不再为 `reject_new` 用户加载共享基础账号；切回 `log_only` 时清理设备账号并恢复共享账号。
 - 新增 `user_devices.credentials` 迁移 `6d7e8f9012ab_add_device_credentials.py`；不保存原始 HWID，不改变已有用户、证书、端口或数据卷。
-- 本地面板 43 项、Node 39 项测试通过；真实 Linux Node、镜像构建、客户端矩阵和服务器验收尚未完成，不得视为已发布。
+- 本地面板 43 项、Node 39 项测试通过；主面板 commit `a6efaa8eafd82c3f68d2ff29074cf9eeb1ec8ae0`、Node commit `d6f3bec204a75085939b5b4e25fa6502f5946ae5` 已推送到各自 `master`。主面板 Actions `36975384550`、Node Actions `36975383911` 均成功，两个 GHCR `latest` 镜像已发布；真实 Linux Node、客户端矩阵和服务器验收仍待完成，不得视为稳定发布。
+- 主面板镜像 index `sha256:42af5defdd9f325b0244c4be182ae6f77513d1d4e2d3572ea009215508de8dae`，amd64 `sha256:5354fb4ae86ac5f1f5fa5634c7704068caafd6c8764aad577c8f3b3df6e3f1ee`，arm64 `sha256:c07e5de4aad0089d4ca63b3baf3440b4e41dbc3bf94a386b0b51e9cdf741481b`；两个架构 OCI revision 均为主面板 commit。配对 Node 的 digest 和 revision 见 Node 仓库发布清单。
 
-## 2026-10-02 Node 活动与策略同步（本地开发，未发布）
+## 2026-10-02 Node 活动与策略同步（镜像已发布，服务器验收待完成）
 
 - 健康 API 保留并校验 Node 原生在线用户、旧核心近期流量、策略数量/revision/同步时间和执行范围；仅旧 Node 无活动合同才回退到主面板用量采样。
 - 用户创建/修改/删除、Node 连接/重启/重连同步完整脱敏策略；60 秒任务自动补齐并重试。一个批次一次数据库读取，最多并发 10 个 Node，单节点失败不影响用户保存及其他节点。
 - 修复真实 RPyC 联调发现的 `AsyncResult.wait(3)` 错误；使用 `set_expiry()` + `wait()`。修复 `dict(netref)` 导致的 ValueError，逐键复制远程字典。两项加入真实 RPyC 新/旧服务合同测试，覆盖健康/活动/策略方法。
 - 原 Chakra 组件保留原宽度、证书、端口、使用系数和刷新，只增加在线用户口径和策略状态文案。桌面/手机截图验收受浏览器管理策略校验失败阻止，保留原组件预览供审阅，不计为视觉验收通过。
 - 设备 API 的数值范围统一为 0–100000；本条是设备专属凭据实现之前的历史记录，当时没有数据库迁移或凭据替换，策略接收也尚未形成直接连接拦截。后续的“设备专属凭据与 Node 新连接拒绝”条目已补上 `6d7e8f9012ab_add_device_credentials.py` 和按已登记账号生成配置的执行链；阅读本文件时以最新条目为准。
-- 本地使用隔离 Python 3.12 与仓库依赖复测；接口/升级/回退和测试说明见 [完整合同](docs/NODE_ACTIVITY_AND_POLICY.md)。本次尚未推送、执行 Actions、发布镜像或部署服务器。
+- 本地使用隔离 Python 3.12 与仓库依赖复测；接口/升级/回退和测试说明见 [完整合同](docs/NODE_ACTIVITY_AND_POLICY.md)。本次已随上述配对 commit 推送并完成 Actions/GHCR 发布；服务器尚未更新或验收。
 
 本文件仅记录本 Fork 相对 [Gozargah/Marzban](https://github.com/Gozargah/Marzban) 的改动。原作者、许可证和上游 Git 历史均保留；完整功能边界见 [FORK_FEATURES.md](FORK_FEATURES.md)。
 

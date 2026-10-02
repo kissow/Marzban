@@ -1,5 +1,12 @@
 # Marzban 开源扩展功能
 
+## 2026-10-02 发布状态
+
+- 状态：镜像已发布，服务器验收待完成；本地测试和 GitHub Actions 已完成，不能写成“稳定发布”。
+- 主面板 `a6efaa8eafd82c3f68d2ff29074cf9eeb1ec8ae0` / Actions `36975384550` / GHCR index `sha256:42af5defdd9f325b0244c4be182ae6f77513d1d4e2d3572ea009215508de8dae`。
+- 配对 Node `d6f3bec204a75085939b5b4e25fa6502f5946ae5` / Actions `36975383911` / GHCR index `sha256:f2a9e93ca3168abb3559f3e48baa98d02e6377fb8d4a480407f447a97bbbf774`。
+- 正式 Xray 基线为 `v26.3.27`；服务器更新前必须备份数据库、`.env`、证书、Xray 配置和数据卷。
+
 本仓库由 Mr.shaw 基于 [Gozargah/Marzban](https://github.com/Gozargah/Marzban) 开发，供其他使用者按开源许可证使用。感谢原作者和贡献者；保留原有 Git 历史与 AGPL-3.0 许可证。本说明只记录本 Fork 的扩展，不把这些功能描述为上游官方功能。
 
 开发参考原项目 `CONTRIBUTING.md`：后端继续使用 FastAPI、SQLAlchemy 和 Alembic，前端沿用 React/Chakra UI。`kissow/Marzban` 的 `master` 是唯一日常安装、升级和镜像发布源；临时开发分支合并后删除。原作者仓库只保留为历史基线、许可证及致谢来源，普通安装和升级流程不会自动读取其可执行内容。
