@@ -4,6 +4,7 @@ from distutils.version import LooseVersion
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, Response
 from fastapi.responses import HTMLResponse
 
+from app import xray
 from app.db import Session, crud, get_db
 from app.dependencies import get_validated_sub, validate_dates
 from app.models.user import DeviceStatusResponse, SubscriptionUserResponse, UserResponse
@@ -68,6 +69,40 @@ def register_request_device_if_present(
                 "imported configurations are not disconnected by this check."
             ),
         )
+    # Add the newly generated per-device credential to the main core and every
+    # connected Node before returning the subscription. Existing connections
+    # remain untouched; the credential is used on the next client connect.
+    try:
+        xray.operations.sync_user_device_accounts(dbuser)
+    except Exception:
+        # Registration remains committed; the periodic policy/config sync will
+        # retry Node account reconciliation without failing the subscription.
+        from app import logger
+        logger.warning("Unable to sync device credential to Xray cores", exc_info=True)
+
+
+def apply_device_credentials(db: Session, dbuser, user: UserResponse,
+                             hwid: str | None) -> UserResponse:
+    """Use a per-HWID credential set when direct Node enforcement is enabled."""
+    action = getattr(getattr(dbuser, "device_limit_action", None), "value",
+                     getattr(dbuser, "device_limit_action", None))
+    if action != "reject_new":
+        return user
+    if not hwid:
+        raise HTTPException(
+            status_code=428,
+            detail="This subscription requires a client X-HWID for device enforcement.",
+        )
+    credentials = crud.get_user_device_credentials(db, dbuser, hwid)
+    if not credentials:
+        raise HTTPException(status_code=403, detail="Device registration is required before subscription retrieval.")
+    result = user.model_copy(deep=True)
+    for proxy_type, settings in result.proxies.items():
+        protocol = getattr(proxy_type, "value", proxy_type)
+        fields = credentials.get(str(protocol).lower())
+        if fields:
+            result.proxies[proxy_type] = settings.model_copy(update=fields)
+    return result
 
 
 def get_subscription_user_info(user: UserResponse) -> dict:
@@ -106,6 +141,7 @@ def user_subscription(
         )
 
     register_request_device_if_present(request, db, dbuser, user_agent, hwid)
+    user = apply_device_credentials(db, dbuser, user, hwid)
 
     crud.update_user_sub(db, dbuser, user_agent)
     response_headers = {
@@ -225,6 +261,7 @@ def user_subscription_with_client_type(
     """Provides a subscription link based on the specified client type (e.g., Clash, V2Ray)."""
     user: UserResponse = UserResponse.model_validate(dbuser)
     register_request_device_if_present(request, db, dbuser, user_agent, hwid)
+    user = apply_device_credentials(db, dbuser, user, hwid)
 
     response_headers = {
         "content-disposition": f'attachment; filename="{user.username}"',

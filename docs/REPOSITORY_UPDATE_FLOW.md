@@ -1,5 +1,15 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
+## MR-20261002-01：本地活动与策略同步，未发布
+
+主面板工作基线 `654e6c3`（master），Node 工作基线 `140fecb`（feature/mrshaw-release）；均为本地未提交修改。scripts 运行时代码无变化，配对文档更新。
+
+API 增加活动来源/scope/时间和策略数量/revision/同步时间/执行状态；Node 新增 REST/RPyC 活动与策略方法。设备凭据迁移为 `6d7e8f9012ab_add_device_credentials.py`，原证书、端口、配置目录、数据卷和核心 v26.3.27 保持原样。Node 内部启用 statsUserOnline；依赖新增 grpcio。完整合同见 [NODE_ACTIVITY_AND_POLICY.md](NODE_ACTIVITY_AND_POLICY.md)。
+
+真实 RPyC 的 wait 超时签名及远程字典转换错误已修复并加入合同测试；主面板定期清零流量会干扰增量估算，已优先使用核心在线用户 API，旧核心回退明确标为尽力统计。不得仅靠模拟结果认定协议可用。
+
+页面使用原生产组件预览；浏览器管理策略校验失败导致本轮无法完成截图验收。发布状态保持未发布，Actions run、镜像 digest、服务器验收留待后续实际执行后填写。
+
 本文把本 Fork 每次更新必须同步的流程、接口登记和本次变更证据放在仓库内，避免依赖工作区外的资料文件。它适用于 `kissow/Marzban`；如果一次变更同时涉及 `kissow/Marzban-node` 或 `kissow/Marzban-scripts`，三个仓库必须记录配对 commit 和兼容性。
 
 ## 1. 每次更新必须同步的资料
@@ -23,7 +33,7 @@
 主面板：kissow/Marzban
 Node：kissow/Marzban-node（无变化，不需要配对更新）
 脚本：kissow/Marzban-scripts（无变化）
-数据库迁移：4a9d2e8b7c61_add_user_device_limit.py
+数据库迁移：4a9d2e8b7c61_add_user_device_limit.py、6d7e8f9012ab_add_device_credentials.py
 Xray：v26.3.27，保持正式基线，不升级 v26.9.9
 证书、端口、.env、数据卷、支付：无变化
 ```
@@ -52,15 +62,15 @@ Xray：v26.3.27，保持正式基线，不升级 v26.9.9
 
 ### 数据库
 
-迁移 `4a9d2e8b7c61_add_user_device_limit.py` 新增用户字段、`user_devices` 表和 PostgreSQL 枚举。删除用户会级联清理设备记录；撤销设备后可以重新登记。回滚前必须备份数据库，禁止删除数据卷。
+迁移 `4a9d2e8b7c61_add_user_device_limit.py` 与 `6d7e8f9012ab_add_device_credentials.py` 新增用户字段、`user_devices` 表、设备凭据 JSON 和 PostgreSQL 枚举。删除用户会级联清理设备记录；撤销设备后可以重新登记。回滚前必须备份数据库，禁止删除数据卷。
 
 ## 4. 已完成的本地证据
 
 - `python -m compileall -q app`：通过。
-- 完整后端测试：`python -m unittest discover -s tests -p 'test_*.py' -v`，目标为 `22 passed`。
-- 设备限制专项测试：`5 passed`。
+- 完整后端测试：本轮 `pytest` 43 项通过；历史 `unittest discover` 22 项记录保留为旧阶段证据。
+- 设备限制与设备凭据加载专项测试：通过；历史设备限制专项记录为 5 passed。
 - 前端 TypeScript 检查和 `npm run build`：通过。
-- Alembic：`4a9d2e8b7c61` 为唯一 head。
+- Alembic：`6d7e8f9012ab` 为设备限制链最新 head。
 - SQLite upgrade/downgrade：通过。
 - `git diff --check`：通过。
 

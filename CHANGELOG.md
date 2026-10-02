@@ -1,5 +1,21 @@
 # Mr.shaw Marzban Fork 更新记录
 
+## 2026-10-02 设备专属凭据与 Node 新连接拒绝（本地开发，未发布）
+
+- `reject_new` 用户按 HWID 生成独立的 VMess/VLESS UUID 或 Trojan/Shadowsocks 密码；订阅请求必须带 `X-HWID`，超额或未登记设备不会获得新的订阅凭据。
+- 主核心和每个已连接 Node 只加载已登记设备账号，不再为 `reject_new` 用户加载共享基础账号；切回 `log_only` 时清理设备账号并恢复共享账号。
+- 新增 `user_devices.credentials` 迁移 `6d7e8f9012ab_add_device_credentials.py`；不保存原始 HWID，不改变已有用户、证书、端口或数据卷。
+- 本地面板 43 项、Node 39 项测试通过；真实 Linux Node、镜像构建、客户端矩阵和服务器验收尚未完成，不得视为已发布。
+
+## 2026-10-02 Node 活动与策略同步（本地开发，未发布）
+
+- 健康 API 保留并校验 Node 原生在线用户、旧核心近期流量、策略数量/revision/同步时间和执行范围；仅旧 Node 无活动合同才回退到主面板用量采样。
+- 用户创建/修改/删除、Node 连接/重启/重连同步完整脱敏策略；60 秒任务自动补齐并重试。一个批次一次数据库读取，最多并发 10 个 Node，单节点失败不影响用户保存及其他节点。
+- 修复真实 RPyC 联调发现的 `AsyncResult.wait(3)` 错误；使用 `set_expiry()` + `wait()`。修复 `dict(netref)` 导致的 ValueError，逐键复制远程字典。两项加入真实 RPyC 新/旧服务合同测试，覆盖健康/活动/策略方法。
+- 原 Chakra 组件保留原宽度、证书、端口、使用系数和刷新，只增加在线用户口径和策略状态文案。桌面/手机截图验收受浏览器管理策略校验失败阻止，保留原组件预览供审阅，不计为视觉验收通过。
+- 设备 API 的数值范围统一为 0–100000；本条是设备专属凭据实现之前的历史记录，当时没有数据库迁移或凭据替换，策略接收也尚未形成直接连接拦截。后续的“设备专属凭据与 Node 新连接拒绝”条目已补上 `6d7e8f9012ab_add_device_credentials.py` 和按已登记账号生成配置的执行链；阅读本文件时以最新条目为准。
+- 本地使用隔离 Python 3.12 与仓库依赖复测；接口/升级/回退和测试说明见 [完整合同](docs/NODE_ACTIVITY_AND_POLICY.md)。本次尚未推送、执行 Actions、发布镜像或部署服务器。
+
 本文件仅记录本 Fork 相对 [Gozargah/Marzban](https://github.com/Gozargah/Marzban) 的改动。原作者、许可证和上游 Git 历史均保留；完整功能边界见 [FORK_FEATURES.md](FORK_FEATURES.md)。
 
 ## 测试中：节点连接原因与重连入口、近期活跃用户统计（2026-10-01，未发布）
@@ -16,7 +32,7 @@
 - 订阅请求可选携带 `X-HWID`、`X-Device-OS`、`X-Device-Model`；原始 HWID 只保存 SHA-256 哈希。同一 HWID 换公网 IP 不重复计数，同一公网 IP 下不同 HWID 分别计数。
 - 新增 `/{XRAY_SUBSCRIPTION_PATH}/{token}/device-status` 脱敏统计；`reject_new` 超限返回 `429`，`log_only` 超限继续放行；普通订阅和显式客户端格式不能通过切换格式绕过登记。
 - 不带 `X-HWID` 的旧客户端保持原订阅行为；该功能限制订阅请求登记，不是 Xray 实时连接数，也不能断开已导入配置。
-- 本次没有修改 Marzban-Node、Xray `v26.3.27`、证书、端口、支付或住宅出口通道。后端 `unittest discover`（22 passed）、设备限制专项测试（5 passed）、前端 TypeScript/Vite 构建和 SQLite 迁移升级/回滚均已通过；PostgreSQL、真实客户端、Linux 联调和生产验收仍待完成，因此当前是测试版，不标记为稳定发布。
+- 本次没有修改 Marzban-Node、Xray `v26.3.27`、证书、端口、支付或住宅出口通道。历史 `unittest discover`（22 passed）与设备限制专项测试（5 passed）记录保留；本轮完整 pytest 43 项、Node 39 项、前端 TypeScript/Vite 构建和 SQLite 迁移升级/回滚均已通过。PostgreSQL、真实客户端、Linux 联调和生产验收仍待完成，因此当前是测试版，不标记为稳定发布。
 - 成功发布证据：Actions run `36838046078`，源 commit `071819b1d90ca5bcf9dac903d11748ac8080dec7`；`ghcr.io/kissow/marzban:latest` OCI index digest 为 `sha256:290994ba997ed3120e494814717520db6216d9b615df4b54bc6f8bf147771b07`，amd64 digest 为 `sha256:e17e7dab19d8cf637e2586b65a913ec9c2c758708628be31115411dece67a7e7`，arm64 digest 为 `sha256:49b1183f193113cdb6c0b5e4d8254b86bce6c0d56e261ec3fe0032fd423c5ff9`；两种架构 OCI revision 均为上述源 commit。
 
 ## CI 构建问题登记与成功复盘（2026-10-01）
@@ -104,6 +120,6 @@
 - 新增受管理员权限保护的 `GET /api/node/{node_id}/health`，通过原有认证通道读取该节点的 CPU、内存、磁盘、运行时间；无可靠来源的在线设备数返回空值。
 - 每个 Marzban-Node 可独立保存一条 HTTP 或 SOCKS5 住宅 IP 出口。支持服务器、端口、可选账号密码；密码加密存储，API 不回显明文。
 - 保存出口时只向对应 Node 下发配置，旧版 Node 不支持扩展时拒绝保存；删除出口后恢复原有路由。
-- 设备数量限制尚未实现，计划在用户设置区域单独开发，不能把公网 IP 数当作实际设备数。
+- （历史阶段记录）设备数量限制当时尚未实现，计划在用户设置区域单独开发；该阶段已被上方的用户设备登记、独立凭据和 Node 配置加载链取代，不能把公网 IP 数当作实际设备数。
 
 发布时须记录与 `kissow/Marzban-node` 的配对版本，并完成真实 Xray、Linux Node 与数据迁移测试。

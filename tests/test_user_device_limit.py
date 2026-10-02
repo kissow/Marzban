@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -26,8 +27,10 @@ os.chdir(_TEST_RUNTIME.name)
 try:
     from app.db.base import Base
     from app.db import crud
-    from app.db.models import NodeUserUsage, User
+    from app.db.models import NodeUserUsage, Proxy, User
+    from app.models.proxy import ProxyTypes
     from app.models.user import DeviceLimitAction, UserStatus
+    from app.xray.config import XRayConfig
 finally:
     os.chdir(_TEST_PREVIOUS_CWD)
 
@@ -147,6 +150,90 @@ class UserDeviceLimitTests(unittest.TestCase):
         self.assertTrue(restored["accepted"])
         self.assertTrue(restored["is_new_device"])
         self.assertEqual(restored["registered_devices"], 1)
+
+    def test_reject_new_generates_private_protocol_credentials_per_hwid(self):
+        user = self.make_user(2, DeviceLimitAction.reject_new)
+        user.proxies.append(Proxy(type=ProxyTypes.VLESS, settings={"id": "shared-id", "flow": ""}))
+        user.proxies.append(Proxy(type=ProxyTypes.Trojan, settings={"password": "shared-password", "flow": ""}))
+        self.db.commit()
+
+        first = crud.register_user_device(self.db, user, "phone")
+        second = crud.register_user_device(self.db, user, "laptop")
+        self.assertTrue(first["accepted"] and second["accepted"])
+        first_credentials = crud.get_user_device_credentials(self.db, user, "phone")
+        second_credentials = crud.get_user_device_credentials(self.db, user, "laptop")
+        self.assertNotEqual(first_credentials["vless"]["id"], second_credentials["vless"]["id"])
+        self.assertNotEqual(first_credentials["trojan"]["password"], second_credentials["trojan"]["password"])
+        self.assertNotIn("phone", str(first_credentials))
+        self.assertNotIn("shared-password", str(first_credentials))
+
+        rejected = crud.register_user_device(self.db, user, "tablet")
+        self.assertFalse(rejected["accepted"])
+        self.assertIsNone(crud.get_user_device_credentials(self.db, user, "tablet"))
+
+    def test_include_db_users_loads_only_registered_credentials_for_reject_new(self):
+        user = self.make_user(2, DeviceLimitAction.reject_new)
+        user.username = "reject-user"
+        user.proxies.append(Proxy(type=ProxyTypes.VLESS, settings={"id": "shared-id", "flow": ""}))
+        self.db.commit()
+        crud.register_user_device(self.db, user, "phone")
+        crud.register_user_device(self.db, user, "laptop")
+
+        config = XRayConfig({
+            "inbounds": [
+                {"tag": "VLESS", "protocol": "vless", "port": 443,
+                 "settings": {"clients": []}},
+            ],
+            "outbounds": [{"tag": "DIRECT", "protocol": "freedom"}],
+        })
+
+        class _DBContext:
+            def __enter__(inner_self):
+                return self.db
+
+            def __exit__(inner_self, *args):
+                return False
+
+        with patch("app.xray.config.GetDB", return_value=_DBContext()):
+            generated = config.include_db_users()
+
+        clients = generated.get_inbound("VLESS")["settings"]["clients"]
+        self.assertEqual(len(clients), 2)
+        self.assertEqual({client["email"] for client in clients}, {
+            f"{user.id}.{user.username}.device-{device.hwid_hash[:16]}"
+            for device in user.devices
+        })
+        self.assertNotIn("shared-id", {client["id"] for client in clients})
+
+    def test_include_db_users_restores_shared_credential_for_log_only(self):
+        user = self.make_user(1, DeviceLimitAction.log_only)
+        user.username = "log-only-user"
+        user.proxies.append(Proxy(type=ProxyTypes.VLESS, settings={"id": "shared-id", "flow": ""}))
+        self.db.commit()
+        crud.register_user_device(self.db, user, "phone")
+
+        config = XRayConfig({
+            "inbounds": [
+                {"tag": "VLESS", "protocol": "vless", "port": 443,
+                 "settings": {"clients": []}},
+            ],
+            "outbounds": [{"tag": "DIRECT", "protocol": "freedom"}],
+        })
+
+        class _DBContext:
+            def __enter__(inner_self):
+                return self.db
+
+            def __exit__(inner_self, *args):
+                return False
+
+        with patch("app.xray.config.GetDB", return_value=_DBContext()):
+            generated = config.include_db_users()
+
+        clients = generated.get_inbound("VLESS")["settings"]["clients"]
+        self.assertEqual(len(clients), 1)
+        self.assertEqual(clients[0]["email"], f"{user.id}.{user.username}")
+        self.assertEqual(clients[0]["id"], "shared-id")
 
     def test_node_active_users_uses_recent_distinct_positive_traffic(self):
         first = self.make_user()

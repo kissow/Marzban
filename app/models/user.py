@@ -81,7 +81,7 @@ class User(BaseModel):
     # 0 means disabled.  A stable client HWID is only used when the client
     # explicitly sends X-HWID; the API never derives a fake device ID from IP.
     device_limit: int = Field(
-        0, ge=0, description="Maximum registered devices; 0 disables the limit"
+        0, ge=0, le=100000, description="Maximum registered devices; 0 disables the limit"
     )
     device_limit_mode: DeviceLimitMode = DeviceLimitMode.hwid
     device_limit_action: DeviceLimitAction = DeviceLimitAction.log_only
@@ -226,7 +226,7 @@ class UserCreate(User):
 class UserModify(User):
     status: UserStatusModify = None
     data_limit_reset_strategy: UserDataLimitResetStrategy = None
-    device_limit: Optional[int] = Field(None, ge=0)
+    device_limit: Optional[int] = Field(None, ge=0, le=100000)
     device_limit_mode: Optional[DeviceLimitMode] = None
     device_limit_action: Optional[DeviceLimitAction] = None
     model_config = ConfigDict(json_schema_extra={

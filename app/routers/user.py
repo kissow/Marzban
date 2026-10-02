@@ -63,6 +63,7 @@ def add_user(
         raise HTTPException(status_code=409, detail="User already exists")
 
     bg.add_task(xray.operations.add_user, dbuser=dbuser)
+    bg.add_task(xray.operations.sync_all_node_device_policies)
     user = UserResponse.model_validate(dbuser)
     report.user_created(user=user, user_id=dbuser.id, by=admin, user_admin=dbuser.admin)
     logger.info(f'New user "{dbuser.username}" added')
@@ -116,6 +117,7 @@ def modify_user(
         bg.add_task(xray.operations.update_user, dbuser=dbuser)
     else:
         bg.add_task(xray.operations.remove_user, dbuser=dbuser)
+    bg.add_task(xray.operations.sync_all_node_device_policies)
 
     bg.add_task(report.user_updated, user=user, user_admin=dbuser.admin, by=admin)
 
@@ -145,8 +147,10 @@ def remove_user(
     admin: Admin = Depends(Admin.get_current),
 ):
     """Remove a user"""
+    device_emails = crud.get_user_device_account_emails(db, dbuser.id)
     crud.remove_user(db, dbuser)
-    bg.add_task(xray.operations.remove_user, dbuser=dbuser)
+    bg.add_task(xray.operations.remove_user, dbuser=dbuser, device_emails=device_emails)
+    bg.add_task(xray.operations.sync_all_node_device_policies)
 
     bg.add_task(
         report.user_deleted, username=dbuser.username, user_admin=Admin.model_validate(dbuser.admin), by=admin

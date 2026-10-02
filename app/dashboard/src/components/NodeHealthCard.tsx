@@ -29,8 +29,17 @@ type NodeHealthResponse = {
     uptime_seconds: number | null;
     active_users: number | null;
     active_users_window_hours?: number;
+    active_users_window_seconds?: number;
     active_users_sampled_at?: string | null;
     active_users_reason?: string | null;
+    activity_source?: string | null;
+    activity_scope?: string | null;
+    activity_reason?: string | null;
+    policy_count?: number | null;
+    policy_enforcement?: string;
+    policy_sync_status?: string;
+    policy_synced_at?: string | null;
+    direct_connection_enforced?: boolean;
     memory_scope: string;
     disk_scope: string;
   } | null;
@@ -71,6 +80,9 @@ export const NodeHealthCard: FC<{ nodeId: number; enabled: boolean }> = ({ nodeI
     metrics?.disk_total_bytes && metrics.disk_used_bytes !== null
       ? (metrics.disk_used_bytes / metrics.disk_total_bytes) * 100
       : null;
+  const activityWindow = metrics?.active_users_window_seconds
+    ? `${Math.max(1, Math.round(metrics.active_users_window_seconds / 60))} min`
+    : `${metrics?.active_users_window_hours ?? 2} h`;
 
   return (
     <Alert status="info" alignItems="stretch" flexDirection="column" mb={4}>
@@ -118,7 +130,7 @@ export const NodeHealthCard: FC<{ nodeId: number; enabled: boolean }> = ({ nodeI
                   }
                 />
                 <Metric
-                  label={t("nodes.health.activeUsers")}
+                  label={t(metrics.activity_scope === "online_users" ? "nodes.health.onlineUsers" : "nodes.health.activeUsers")}
                   value={
                     metrics.active_users === null
                       ? t("nodes.health.activeUsersUnavailable")
@@ -133,10 +145,24 @@ export const NodeHealthCard: FC<{ nodeId: number; enabled: boolean }> = ({ nodeI
                 })}
               </Text>
               <Text fontSize="xs" color="gray.500">
-                {t("nodes.health.activeUsersScope", {
-                  hours: metrics.active_users_window_hours ?? 2,
+                {metrics.activity_scope === "online_users"
+                  ? t("nodes.health.onlineUsersScope")
+                  : t("nodes.health.activeUsersScope", { window: activityWindow })}
+              </Text>
+              <Text fontSize="xs" color="gray.500">
+                {t("nodes.health.activitySource", {
+                  source: t(`nodes.health.source.${metrics.activity_source || "unknown"}`),
                 })}
               </Text>
+              <Text fontSize="xs" color="gray.500">
+                {t("nodes.health.policySync", {
+                  total: metrics.policy_count ?? "—",
+                  status: t(`nodes.health.sync.${metrics.policy_sync_status || "pending"}`),
+                })}
+              </Text>
+              {metrics.policy_enforcement && (
+                <Text fontSize="xs" color="gray.500">{t("nodes.health.policyScope")}</Text>
+              )}
             </>
           ) : (
             <Text fontSize="sm" color="gray.500">

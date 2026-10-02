@@ -1,4 +1,8 @@
 **/node_modules
+app/dashboard/ui-preview/
+app/dashboard/build-ci/
+ui-preview/
+_patch.tmp
 *.log
 *.md
 *.pyc

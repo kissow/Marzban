@@ -365,6 +365,7 @@ class XRayConfig(dict):
             query = db.query(
                 db_models.User.id,
                 db_models.User.username,
+                db_models.User.device_limit_action,
                 func.lower(db_models.Proxy.type).label('type'),
                 db_models.Proxy.settings,
                 func.group_concat(db_models.excluded_inbounds_association.c.inbound_tag).label('excluded_inbound_tags')
@@ -379,6 +380,7 @@ class XRayConfig(dict):
                 func.lower(db_models.Proxy.type),
                 db_models.User.id,
                 db_models.User.username,
+                db_models.User.device_limit_action,
                 db_models.Proxy.settings,
             )
             result = query.all()
@@ -389,6 +391,8 @@ class XRayConfig(dict):
                 grouped_data[row.type].append((
                     row.id,
                     row.username,
+                    row.device_limit_action,
+                    row.type,
                     row.settings,
                     [i for i in row.excluded_inbound_tags.split(',') if i] if row.excluded_inbound_tags else None
                 ))
@@ -403,15 +407,40 @@ class XRayConfig(dict):
                     clients = config.get_inbound(inbound['tag'])['settings']['clients']
 
                     for row in rows:
-                        user_id, username, settings, excluded_inbound_tags = row
+                        user_id, username, device_limit_action, proxy_type_name, settings, excluded_inbound_tags = row
 
                         if excluded_inbound_tags and inbound['tag'] in excluded_inbound_tags:
                             continue
 
-                        client = {
-                            "email": f"{user_id}.{username}",
-                            **settings
-                        }
+                        action = getattr(device_limit_action, "value", device_limit_action)
+                        if action == "reject_new":
+                            # A rejecting user has no shared credential on the
+                            # core. Every registered HWID receives its own
+                            # protocol credential, so a direct Node connection
+                            # must present a device-specific secret.
+                            devices = db.query(db_models.UserDevice).filter(
+                                db_models.UserDevice.user_id == user_id,
+                                db_models.UserDevice.revoked_at.is_(None),
+                            ).all()
+                            for device in devices:
+                                device_credentials = (device.credentials or {}).get(proxy_type_name, {})
+                                if not device_credentials:
+                                    continue
+                                client = {
+                                    "email": f"{user_id}.{username}.device-{device.hwid_hash[:16]}",
+                                    **settings,
+                                    **device_credentials,
+                                }
+                                if client.get('flow') and (
+                                        inbound.get('network', 'tcp') not in ('tcp', 'raw', 'kcp')
+                                        or (inbound.get('network', 'tcp') in ('tcp', 'raw', 'kcp')
+                                            and inbound.get('tls') not in ('tls', 'reality'))
+                                        or inbound.get('header_type') == 'http'):
+                                    del client['flow']
+                                clients.append(client)
+                            continue
+
+                        client = {"email": f"{user_id}.{username}", **settings}
 
                         # XTLS currently only supports transmission methods of TCP and mKCP
                         if client.get('flow') and (

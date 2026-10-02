@@ -16,15 +16,15 @@
 ## 当前扩展
 
 - `/api/node/{node_id}/health` 经现有 Node 认证通道读取对应节点的 CPU、内存、磁盘和运行时间；过期或无效快照不显示为实时值。
-- 节点管理界面展示上述指标。Node 原始快照没有可靠的节点级在线用户来源时，`active_users` 为 `null`；主面板有 `NodeUserUsage` 采样时补充最近 2 小时有正流量的去重用户，并明确标注不是实时在线数；不得把主面板总在线数或服务器 TCP 连接数冒充该值。
+- 节点管理界面展示上述指标。2026-10-02 本地开发版优先读取 Xray `GetAllOnlineUsers`；旧核心回退到 Node 观察到的近期流量，旧 Node 回退到主面板 `NodeUserUsage` 记录。来源、范围、采样时间分别标注，详情见 [活动与策略合同](docs/NODE_ACTIVITY_AND_POLICY.md)。
 - `/api/node/{node_id}/egress` 按节点 ID 保存唯一一条 HTTP/SOCKS 出站配置；新增更多 Node 时各自独立配置住宅 IP。凭据加密存储，API 不回显密码；下发时只给该节点的配置副本添加 `marzban_node_extensions` 扩展，不修改主面板 Xray 配置。
 - 配置前先通过 Node 健康响应确认 `managed-outbounds-v1` 能力；不支持的旧 Node 不接收新配置。删除出站会触发节点重启以恢复原路由。
 - 用户设置新增设备限制字段：`device_limit`、`device_limit_mode`、`device_limit_action`；普通订阅和指定客户端格式订阅可通过 `X-HWID`、`X-Device-OS`、`X-Device-Model` 登记设备，并由 `/device-status` 返回脱敏统计。原始 HWID 只保存 SHA-256 哈希；`reject_new` 超限返回 `429`，`log_only` 只记录不拒绝。
-- 设备限制只属于主面板的订阅请求登记，不修改 Marzban-Node、Xray、证书、端口或已导入配置的连接；不带 `X-HWID` 的旧客户端保持兼容，也不承诺所有客户端都会发送该请求头。
+- 设备限制在主面板的订阅请求登记时执行；`reject_new` 为每个 HWID 生成独立协议凭据，并通过现有 Xray 控制通道同步到主核心和已连接 Node。Node 配置不再加载该用户的共享账号，只加载已登记设备账号，因此未登记/超额设备不能获得新的可用连接凭据；不带 `X-HWID` 的旧客户端返回 `428`。这不是实时在线设备数统计，已有旧配置不会被订阅请求主动踢下线，真实 Linux Node 和客户端矩阵仍需验收。
 
-设备限制代码已完成并通过本地专项测试（5 passed）及 `unittest discover`（22 passed）；SQLite 迁移升级/回滚也已通过。2026-10-01 的正式 Actions 曾先后暴露专项测试误用未声明的 pytest、旧版 APScheduler 与新版 setuptools 的 `pkg_resources` 兼容问题、以及测试导入隐式依赖系统 Xray 二进制的问题；三项均已记录、修复并在 Actions run `36838046078` 通过完整重跑。该 run 对应提交 `071819b`，并成功发布 `ghcr.io/kissow/marzban:latest` 多架构镜像；index digest、amd64/arm64 digest 和 OCI revision 已登记在 `CHANGELOG.md` 与 `docs/REPOSITORY_UPDATE_FLOW.md`。服务器验收和真实客户端矩阵仍未完成，因此本功能仍是测试版，不是 Xray 实时连接数限制。
+设备限制代码已完成；历史专项测试为 5 passed、历史完整测试为 22 passed，本轮主面板完整 pytest 为 43 passed，Node 为 39 passed，SQLite 迁移升级/回滚也已通过。2026-10-01 的正式 Actions 记录保留为历史证据；本轮新增的设备专属凭据与 Node 配置加载尚未完成新的 Actions、镜像和服务器验收，因此当前仍是测试版，不是 Xray 实时连接数限制。
 
-住宅出口功能必须与同一开发系列的 `kissow/Marzban-node` 配对。HTTP 代理只承载 TCP，UDP 保持原路由。尚未实现住宅代理自动健康检查、故障摘除、按用户/分组路由或真实节点级活跃用户统计。请先在隔离测试节点验证，不要直接替换生产面板和数据库。
+住宅出口功能必须与同一开发系列的 `kissow/Marzban-node` 配对。HTTP 代理只承载 TCP，UDP 保持原路由。尚未实现住宅代理自动健康检查、故障摘除、按用户/分组路由及精确实时设备数限制。新增 Node 活动统计仍需配对镜像与真实服务器验收。
 
 节点指标只由 Marzban 向 Node 通过现有认证通道读取，并由 Marzban 的受保护 API 提供。任何获授权的外部项目均可独立调用该 API；本仓库不包含特定业务系统的对接、别名映射或页面代码。
 

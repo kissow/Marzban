@@ -33,6 +33,7 @@ import {
 } from "@chakra-ui/react";
 import {
   ChartPieIcon,
+  InformationCircleIcon,
   PencilIcon,
   UserPlusIcon,
 } from "@heroicons/react/24/outline";
@@ -80,6 +81,16 @@ const UserUsageIcon = chakra(ChartPieIcon, {
   baseStyle: {
     w: 5,
     h: 5,
+  },
+});
+
+const InfoIcon = chakra(InformationCircleIcon, {
+  baseStyle: {
+    w: 4,
+    h: 4,
+    color: "gray.400",
+    cursor: "help",
+    flexShrink: 0,
   },
 });
 
@@ -530,9 +541,9 @@ export const UserDialog: FC<UserDialogProps> = () => {
                       <Grid
                         templateColumns={{
                           base: "minmax(0, 1fr)",
-                          sm: "repeat(2, minmax(0, 1fr))",
+                          md: "repeat(2, minmax(0, 1fr))",
                         }}
-                        gap={3}
+                        gap={{ base: 4, md: 5 }}
                         alignItems="start"
                         mb={"10px"}
                       >
@@ -561,7 +572,21 @@ export const UserDialog: FC<UserDialogProps> = () => {
                         </GridItem>
                         <GridItem>
                           <FormControl>
-                            <FormLabel>{t("userDialog.deviceLimit")}</FormLabel>
+                            <FormLabel whiteSpace="nowrap">
+                              <HStack spacing={1} align="center">
+                                <Text as="span">{t("userDialog.deviceLimit")}</Text>
+                                <Tooltip
+                                  label={t("userDialog.deviceLimitHelp")}
+                                  placement="top-start"
+                                  hasArrow
+                                  maxW="320px"
+                                  whiteSpace="normal"
+                                  fontSize="xs"
+                                >
+                                  <InfoIcon aria-label={t("userDialog.deviceLimitHelp")} />
+                                </Tooltip>
+                              </HStack>
+                            </FormLabel>
                             <Controller
                               control={form.control}
                               name="device_limit"
@@ -582,10 +607,23 @@ export const UserDialog: FC<UserDialogProps> = () => {
                                 />
                               )}
                             />
-                            <FormHelperText>
-                              {t("userDialog.deviceLimitHelp")}
-                            </FormHelperText>
-                            <FormLabel mt={3}>{t("userDialog.deviceLimitAction")}</FormLabel>
+                            <FormLabel mt={4} whiteSpace="nowrap">
+                              <HStack spacing={1} align="center">
+                                <Text as="span">{t("userDialog.deviceLimitAction")}</Text>
+                                <Tooltip
+                                  label={t("userDialog.deviceLimitActionHelp")}
+                                  placement="top-start"
+                                  hasArrow
+                                  maxW="320px"
+                                  whiteSpace="normal"
+                                  fontSize="xs"
+                                >
+                                  <InfoIcon
+                                    aria-label={t("userDialog.deviceLimitActionHelp")}
+                                  />
+                                </Tooltip>
+                              </HStack>
+                            </FormLabel>
                             <Controller
                               control={form.control}
                               name="device_limit_action"
@@ -611,9 +649,6 @@ export const UserDialog: FC<UserDialogProps> = () => {
                                 </Select>
                               )}
                             />
-                            <FormHelperText>
-                              {t("userDialog.deviceLimitActionHelp")}
-                            </FormHelperText>
                           </FormControl>
                         </GridItem>
                       </Grid>

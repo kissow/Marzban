@@ -178,6 +178,9 @@ class UserDevice(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     hwid_hash = Column(String(64), nullable=False)
+    # Per-device protocol credentials are generated only for users whose
+    # device_limit_action is reject_new. The HWID itself is never stored.
+    credentials = Column(JSON, nullable=False, default=dict, server_default="{}")
     first_seen = Column(DateTime, default=datetime.utcnow, nullable=False)
     last_seen = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     last_ip = Column(String(255), nullable=True)

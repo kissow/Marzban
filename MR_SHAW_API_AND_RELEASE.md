@@ -1,5 +1,13 @@
 # Mr.shaw 扩展接口与更新规范
 
+## 2026-10-02 本地接口增补（未发布）
+
+`GET /api/node/{node_id}/health` 增加 Node 活动来源、scope、采样窗口和时间，以及策略数量、revision、同步时间、同步状态与 `direct_connection_enforced=true`。优先保留 Node 原生在线用户，旧 Node 才使用面板近期用量回退。
+
+Node 内部新增 `POST /device-activity`、`POST /device-policies` 及对应 RPyC 方法；沿用 TLS 认证通道和现有端口。设备数量上限在创建/修改用户 API 统一校验为 0–100000。本轮没有新增数据库迁移；策略确认只表示接收，`reject_new` 仍在带 HWID 的订阅请求时执行。
+
+完整请求/响应、403/422、原子替换、重试、兼容与回退见 [Node 活动统计与设备策略合同](docs/NODE_ACTIVITY_AND_POLICY.md)。
+
 本文说明本 Fork 新增的用户级订阅设备登记限制、节点健康与每 Node 住宅代理功能。原版全部接口仍以代码和运行实例的 OpenAPI 为准；`.env` 变量不是 API，不应把内部 Node 通道暴露给第三方项目。没有填写住宅代理主机、端口等参数时，不会自动生成住宅 IP。
 
 跨主面板、Node、脚本的更新登记必须同时填写仓库内的 [`docs/REPOSITORY_UPDATE_FLOW.md`](docs/REPOSITORY_UPDATE_FLOW.md)，并按本仓库的 [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) 逐项检查。本文是主面板接口字段的维护源；三仓库的可依赖接口、Node 通道和脚本命令索引也在上述文档中。任何接口、订阅响应、Node 通道或配置字段的变化，都必须在同一个变更中更新本文、总索引、对应 CHANGELOG、README/FORK_FEATURES 和验收清单。

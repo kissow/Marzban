@@ -122,10 +122,23 @@ def get_node_health(
         return {**unknown, "reason": "unavailable"}
     if metrics is None:
         return {**unknown, "reason": "invalid_or_stale"}
-    # The Node health channel intentionally does not claim a live connection
-    # count. Enrich the snapshot with the main panel's hourly per-node usage
-    # sample so the UI can show a clearly labelled recent activity metric.
-    metrics.update(crud.get_node_active_users(db, dbnode.id))
+    sync = getattr(node, "device_policy_sync", {})
+    metrics["policy_sync_status"] = sync.get("policy_sync_status", "pending")
+    # Prefer the Node's own Xray counter-delta sample. Older Nodes do not
+    # expose that optional contract, so keep the existing panel sample as a
+    # clearly labelled compatibility fallback instead of overwriting a valid
+    # Node-originated value.
+    if metrics.get("activity_source") is None:
+        fallback = crud.get_node_active_users(db, dbnode.id)
+        metrics.update({
+            "active_users": fallback.get("active_users"),
+            "active_users_window_hours": fallback.get("active_users_window_hours"),
+            "active_users_sampled_at": fallback.get("active_users_sampled_at"),
+            "active_users_reason": fallback.get("active_users_reason"),
+            "activity_source": "panel-node-usage",
+            "activity_scope": "recent_traffic",
+            "activity_reason": fallback.get("active_users_reason"),
+        })
     return {"node_id": dbnode.id, "status": "online", "reason": None, "metrics": metrics}
 
 

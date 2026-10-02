@@ -55,6 +55,8 @@
 
 > **Mr.shaw community fork:** This repository preserves the upstream Marzban project and adds per-node health, one residential outbound per Node, and a user-level device-registration limit. Read [Fork features](FORK_FEATURES.md), the [Changelog](CHANGELOG.md), and the [API and release guide](MR_SHAW_API_AND_RELEASE.md) to see what is implemented, how its interfaces work, and what remains in development. The device limit is implemented but not yet a production release.
 
+Local development (2026-10-02): paired Node online-user statistics and policy acknowledgement/status are documented in [Node activity and policy contracts](docs/NODE_ACTIVITY_AND_POLICY.md). This is unpublished. HWID registration enforcement still applies to subscription requests; direct node connections are not yet device-limited.
+
 For every code, API, configuration, UI, Xray-core, or documentation change, follow this repository's [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) and [`docs/REPOSITORY_UPDATE_FLOW.md`](docs/REPOSITORY_UPDATE_FLOW.md). A change is not considered released until the matching Node and scripts records, API/configuration notes, tests, GitHub Actions result, image digest, and server acceptance status are recorded. If this repository changes only the UI, the release record must explicitly say that API, database, Node channel, certificates, and ports are unchanged.
 
 <p align="center">

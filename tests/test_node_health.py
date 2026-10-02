@@ -32,6 +32,53 @@ class NodeHealthTests(unittest.TestCase):
         self.raw["active_users"] = 999
         self.assertIsNone(normalize_node_health(self.raw, self.now)["active_users"])
 
+    def activity(self, **overrides):
+        self.raw.update(active_users=3, active_users_window_seconds=120,
+                        active_users_sampled_at=self.now.isoformat(),
+                        activity_source="xray-user-stats-delta",
+                        activity_scope="recent_traffic", activity_reason=None)
+        self.raw.update(overrides)
+        return normalize_node_health(self.raw, self.now)
+
+    def test_valid_node_activity_is_preserved(self):
+        result = self.activity()
+        self.assertEqual(result["active_users"], 3)
+        self.assertEqual(result["activity_source"], "xray-user-stats-delta")
+        self.assertEqual(result["active_users_window_seconds"], 120)
+
+    def test_online_user_scope_is_preserved(self):
+        result = self.activity(activity_source="xray-online-users", activity_scope="online_users",
+                               active_users_window_seconds=None)
+        self.assertEqual(result["active_users"], 3)
+        self.assertEqual(result["activity_scope"], "online_users")
+
+    def test_unsupported_policy_is_not_reported_as_synced(self):
+        result = normalize_node_health(self.raw, self.now)
+        self.assertIsNone(result["policy_count"])
+        self.assertEqual(result["policy_enforcement"], "unsupported")
+        self.assertFalse(result["direct_connection_enforced"])
+
+    def test_invalid_activity_is_rejected(self):
+        for overrides in ({"active_users": True}, {"active_users": -1},
+                          {"active_users_window_seconds": 0}, {"activity_source": "host-sockets"},
+                          {"active_users_sampled_at": None},
+                          {"active_users_sampled_at": (self.now-timedelta(seconds=20)).isoformat()},
+                          {"active_users_sampled_at": (self.now+timedelta(seconds=20)).isoformat()},
+                          {"activity_scope": "device_count"}):
+            with self.subTest(overrides=overrides):
+                self.activity()  # reset the optional contract
+                self.assertIsNone(self.activity(**overrides))
+
+    def test_policy_contract_preserves_direct_credential_enforcement_claim(self):
+        self.raw.update(policy_count=3, policy_enforcement="subscription_request_and_node_credentials",
+                        policy_synced_at=self.now.isoformat(), policy_revision="a" * 64,
+                        direct_connection_enforced=True)
+        result = normalize_node_health(self.raw, self.now)
+        self.assertEqual(result["policy_count"], 3)
+        self.assertEqual(result["policy_revision"], "a" * 64)
+        self.assertEqual(result["policy_enforcement"], "subscription_request_and_node_credentials")
+        self.assertTrue(result["direct_connection_enforced"])
+
     def test_stale_or_future_sample_is_unknown(self):
         self.raw["sampled_at"] = (self.now - timedelta(seconds=16)).isoformat()
         self.assertIsNone(normalize_node_health(self.raw, self.now))

@@ -3,6 +3,8 @@ Functions for managing proxy hosts, users, user templates, nodes, and administra
 """
 
 import hashlib
+import secrets
+from uuid import uuid4
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
@@ -37,6 +39,7 @@ from app.models.node import NodeCreate, NodeModify, NodeStatus, NodeUsageRespons
 from app.models.proxy import ProxyHost as ProxyHostModify
 from app.models.user import (
     ReminderType,
+    DeviceLimitAction,
     UserCreate,
     UserDataLimitResetStrategy,
     UserModify,
@@ -767,17 +770,30 @@ def register_user_device(
             "device_model": (device_model or "")[:128] or None,
             "revoked_at": None,
         }
+        credentials = getattr(device, "credentials", None) if device else None
+        if locked_user.device_limit_action == DeviceLimitAction.reject_new and not credentials:
+            credentials = {}
+            for proxy in locked_user.proxies:
+                protocol = _enum_value(proxy.type).lower()
+                if protocol in ("vmess", "vless"):
+                    credentials[protocol] = {"id": str(uuid4())}
+                elif protocol in ("trojan", "shadowsocks"):
+                    credentials[protocol] = {"password": secrets.token_urlsafe(24)}
+
         if device is None:
             device = UserDevice(
                 user_id=locked_user.id,
                 hwid_hash=hwid_hash,
                 first_seen=now,
+                credentials=credentials or {},
                 **metadata,
             )
             db.add(device)
             active_devices += 1
         else:
             was_revoked = device.revoked_at is not None
+            if credentials is not None:
+                device.credentials = credentials
             for key, value in metadata.items():
                 setattr(device, key, value)
             if was_revoked:
@@ -815,6 +831,27 @@ def register_user_device(
         "is_new_device": is_new_device,
     })
     return status
+
+
+def get_user_device_credentials(db: Session, dbuser: User, hwid: str) -> dict | None:
+    """Return generated credentials for one HWID without returning the HWID."""
+    normalized = (hwid or "").strip()
+    if not normalized:
+        return None
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    device = db.query(UserDevice).filter(
+        UserDevice.user_id == dbuser.id,
+        UserDevice.hwid_hash == digest,
+        UserDevice.revoked_at.is_(None),
+    ).one_or_none()
+    return dict(device.credentials or {}) if device else None
+
+
+def get_user_device_account_emails(db: Session, user_id: int) -> list[str]:
+    """Return only derived Xray account labels needed for deletion cleanup."""
+    return [f"device-{device.hwid_hash[:16]}" for device in db.query(UserDevice).filter(
+        UserDevice.user_id == user_id
+    ).all()]
 
 
 def reset_all_users_data_usage(db: Session, admin: Optional[Admin] = None):

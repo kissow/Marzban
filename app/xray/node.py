@@ -1,4 +1,5 @@
 import socket
+import json
 import re
 import ssl
 import tempfile
@@ -171,6 +172,28 @@ class ReSTXRayNode:
         except NodeAPIError as exc:
             if exc.status_code == 404:
                 raise NotImplementedError("Node does not support health metrics") from exc
+            raise
+
+    def get_device_activity(self):
+        """Return the optional activity contract, or ``None`` for old Nodes."""
+        if not self._session_id:
+            raise ConnectionError("Node is not connected")
+        try:
+            return self.make_request("/device-activity", timeout=3)
+        except NodeAPIError as exc:
+            if exc.status_code in (404, 405, 501):
+                return None
+            raise
+
+    def set_device_policies(self, policies):
+        """Send a complete policy snapshot when supported by the Node."""
+        if not self._session_id:
+            raise ConnectionError("Node is not connected")
+        try:
+            return self.make_request("/device-policies", timeout=5, policies=policies)
+        except NodeAPIError as exc:
+            if exc.status_code in (404, 405, 501):
+                return None
             raise
 
     def start(self, config: XRayConfig):
@@ -395,10 +418,39 @@ class RPyCXRayNode:
         if not self.connected:
             raise ConnectionError("Node is not connected")
         result = rpyc.async_(self.connection.root.fetch_health)()
-        result.wait(3)
+        result.set_expiry(3)
+        result.wait()
         if not result.ready:
             raise TimeoutError("Node health request timed out")
-        return dict(result.value)
+        return {key: result.value[key] for key in result.value}
+
+    def get_device_activity(self):
+        """Return the optional activity contract, or ``None`` for old Nodes."""
+        if not self.connected:
+            raise ConnectionError("Node is not connected")
+        fetch = getattr(self.connection.root, "fetch_device_activity", None)
+        if fetch is None:
+            return None
+        result = rpyc.async_(fetch)()
+        result.set_expiry(3)
+        result.wait()
+        if not result.ready:
+            raise TimeoutError("Node activity request timed out")
+        return {key: result.value[key] for key in result.value}
+
+    def set_device_policies(self, policies):
+        """Send a complete policy snapshot when supported by the Node."""
+        if not self.connected:
+            raise ConnectionError("Node is not connected")
+        setter = getattr(self.connection.root, "set_device_policies", None)
+        if setter is None:
+            return None
+        result = rpyc.async_(setter)(json.dumps(policies))
+        result.set_expiry(5)
+        result.wait()
+        if not result.ready:
+            raise TimeoutError("Node policy update timed out")
+        return {key: result.value[key] for key in result.value}
 
     def _prepare_config(self, config: XRayConfig):
         for inbound in config.get("inbounds", []):
