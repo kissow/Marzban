@@ -1,15 +1,17 @@
 # Marzban 主面板发布清单
 
-## MR-20261003-HWID-COMPAT（本地测试中，尚未发布）
+## MR-20261003-HWID-COMPAT（镜像已发布，服务器验收待完成）
 
 - [x] 修复无 HWID 订阅 428；共享账号与独立账号共同加载、同步到主核心和在线 Node。
 - [x] 文档说明无 HWID 兼容路径可绕过限额；HWID 登记不等于物理设备数，ACK 不证明所有客户端被拦截。
-- [ ] 完整后端测试、TypeScript/Vite、compileall 与 diff 检查的最终结果。
-- [ ] 仓库提交、GitHub Actions 成功、GHCR index/架构 digest 和 OCI revision 核对。
+- [x] 完整后端测试 49 项、TypeScript/Vite、compileall 与 diff 检查通过；Vite 仅保留既有大 bundle 警告。
+- [x] 仓库提交、GitHub Actions、GHCR index/架构 digest 和 OCI revision 已核对。
 - [ ] 服务器更新后验证普通客户端导入、真实主核心/Node 连接，以及 HWID 登记/重复/超额拒绝。
 - [x] 无新 UI、数据库迁移、Node 通道、脚本、证书、端口、环境文件或核心版本变化；Node 不需更新，核心仍 v26.3.27。
 
-当前只标本地修复；历史发布证据在下方。先前用户验收后又报告订阅失败，本轮须重新验收，不得直接标为稳定发布。
+本轮代码和镜像已经发布；先前用户验收后又报告订阅失败，服务器必须按下方验收项重新验证，不能直接标为稳定发布。
+
+发布证据：主面板 commit `44397842bab52acbd49672a6812958b9fea17f28`，Actions `37087589319`，GHCR `latest` index `sha256:a0818c18627358f2b8e7eaf3e33e20056625acaa0a663fe578c6446cb4bfb51f`；配对 Node commit `91fbf0484127b1fe3fc34b34c49d862ad6a2c320`，Actions `37087589432`，GHCR `latest` index `sha256:ab72518f962f44f2f6594f14f9cbf95332125acb4079a94b71423fdb02b129d7`。Node 本轮无运行时代码变化，不需要更新 Node 服务器；两个仓库正式 Xray 均为 `v26.3.27`。
 
 ## MR-20261002-01 镜像发布核对（服务器验收待完成）
 
