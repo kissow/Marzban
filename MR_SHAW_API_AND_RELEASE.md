@@ -1,10 +1,12 @@
 # Mr.shaw 扩展接口与更新规范
 
-## MR-20261003-EGRESS-UDP：住宅出口合同扩展（本地，未发布）
+## MR-20261003-EGRESS-UDP：住宅出口合同扩展（镜像已发布，服务器验收待完成）
 
 没有新增路径或认证：sudo 管理员的 `GET/PUT/DELETE /api/node/{node_id}/egress` 沿用原合同。PUT 新增 `udp_mode=legacy|proxy|tcp_only`（省略 legacy），GET 已配置时返回模式；密码仍不回显。HTTP+proxy 或非法模式 422；旧/离线/能力不足 Node 在保存前 409。非 legacy 需要 `managed-outbounds-v1` 和新增 `managed-outbounds-udp-v1`，重连时重复检查。成功写库只代表异步重启已排队，不代表供应商连通性通过。
 
-认证 REST/RPyC 配置通道只添加可选 extension 字段；legacy 为兼容旧 Node 省略此字段。additive 迁移 `7e8f9012ab34` 只增加 `node_egress.udp_mode`，不改用户/节点/凭据。两运行时仓库需要配对发布，scripts/证书/端口/环境/数据卷/核心 v26.3.27 无变化。协议、DNS 替换和显式路由优先级、错误、弃用/回退及验收完整说明见 [NODE_EGRESS_UDP.md](docs/NODE_EGRESS_UDP.md)。当前未推送或发布镜像，线上历史 latest 不包含本功能。
+认证 REST/RPyC 配置通道只添加可选 extension 字段；legacy 为兼容旧 Node 省略此字段。additive 迁移 `7e8f9012ab34` 只增加 `node_egress.udp_mode`，不改用户/节点/凭据。两运行时仓库需要配对发布，scripts/证书/端口/环境/数据卷/核心 v26.3.27 无变化。协议、DNS 替换和显式路由优先级、错误、弃用/回退及验收完整说明见 [NODE_EGRESS_UDP.md](docs/NODE_EGRESS_UDP.md)。当前配对 latest 已发布并核对源提交；真实服务器与供应商仍待验收。
+
+发布证据（配对源 SHA、Actions、两镜像 index/架构 digest/OCI revision、scripts 文档提交）见 [EGRESS_UDP_RELEASE.md](docs/EGRESS_UDP_RELEASE.md)。服务器未验收，不是稳定版。
 
 ## 2026-10-03 订阅兼容合同（镜像已发布，服务器验收待完成）
 

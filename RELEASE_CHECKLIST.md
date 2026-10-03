@@ -1,6 +1,6 @@
 # Marzban 主面板发布清单
 
-## MR-20261003-EGRESS-UDP（本地，未发布）
+## MR-20261003-EGRESS-UDP（镜像已发布，服务器验收待完成）
 
 - [x] 原 Chakra 住宅出口表单增加 per-Node UDP 处理；保留原证书、节点端口、开关和宽度，手机单列。
 - [x] 既有 egress API、能力标识、迁移 `7e8f9012ab34` 和密码保留合同已登记；旧数据 legacy，原用户/节点/凭据不删除。
@@ -9,9 +9,11 @@
 - [x] README/FORK_FEATURES/CHANGELOG/API、Node 线协议与工作区 05/08/09 已同步；[边界与验收](docs/NODE_EGRESS_UDP.md)。
 - [ ] 真实桌面/手机截图审核：浏览器本地安全策略校验未通过，不能标为 UI 已验收。
 - [ ] Linux 主面板/Node 认证联调、实际供应商 TCP53、v2rayNG/Clash Meta 同节点对照与 UDP 支持供应商回归。
-- [ ] 获准推送、配对提交、Actions 成功、两镜像 digest/OCI revision、服务器验收记录。
+- [x] 已获准推送；配对提交、Actions 成功、两镜像 index/架构 digest/OCI revision 已登记。服务器验收仍待完成。
 
-本功能未发布；下方历史发布证据不能当作 UDP 功能已发布。发布后需要配对更新 Node 和主面板，优先 Node；scripts 无变化。非 DNS UDP 阻断目前由路由单元测试覆盖，不是所有真实应用已验证。
+本功能镜像已发布，服务器验收待完成；下方历史验收不能代替本次 UDP 功能验收。需要配对更新 Node 和主面板，优先 Node；scripts 运行时无变化、配对文档已更新。非 DNS UDP 阻断目前由路由单元测试覆盖，不是所有真实应用已验证。
+
+发布证据（配对源 SHA、Actions、两镜像 index/架构 digest/OCI revision、scripts 文档提交）见 [EGRESS_UDP_RELEASE.md](docs/EGRESS_UDP_RELEASE.md)。服务器未验收，不是稳定版。
 
 ## MR-20261003-HWID-COMPAT（镜像已发布，服务器验收待完成）
 
