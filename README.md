@@ -428,13 +428,10 @@ Different action typs are: `user_created`, `user_updated`, `user_deleted`, `user
 
 # Donation
 
-If you found Marzban useful and would like to support its development, you can make a donation in one of the following crypto networks:
+The addresses below support development and maintenance of the **Mr.shaw community fork**. This fork is based on [Gozargah/Marzban](https://github.com/Gozargah/Marzban); thank you to the upstream authors and contributors. To support the original project instead, use its [upstream donation section](https://github.com/Gozargah/Marzban#donation).
 
-- TRON network (TRC20): `TX8kJoDcowQPBFTYHAJR36GyoUKP1Xwzkb`
-- ETH, BNB, MATIC network (ERC20, BEP20): `0xFdc9ad32454FA4fc4733270FCc12ddBFb68b83F7`
-- Bitcoin network: `bc1qpys2nefgsjjgae3g3gqy9crsv3h3rm96tlkz0v`
-- Dogecoin network: `DJAocBAu8y6LwhDKUktLAyzV8xyoFeHH6R`
-- TON network: `EQAVf-7hAXHlF-jmrKE44oBwN7HGQFVBLAtrOsev5K4qR4P8`
+- USDT•TRON (TRC20): `TXWN1uwo9X6mXizcb4hJPTquEmvWWgMftU`
+- USDT•BNB Smart Chain (BEP20): `0xeC3f0fb7B6F4003A903bB3d75853115dCA6BF078`
 
 Thank you for your support!
 

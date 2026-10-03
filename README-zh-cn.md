@@ -362,13 +362,10 @@ Marzban 配备了一个集成的 Telegram bot，可以处理服务器管理、�
 
 # 捐赠
 
-如果您认为 Marzban 有用，并想支持其发展，可以在以下加密网络之一进行捐赠：
+以下地址用于支持 **Mr.shaw 社区 Fork** 的开发与维护。本 Fork 基于 [Gozargah/Marzban](https://github.com/Gozargah/Marzban)，感谢原作者和贡献者。如果希望支持原项目，请访问[上游捐赠说明](https://github.com/Gozargah/Marzban#donation)。
 
-- TRON(TRX) 网络：`TX8kJoDcowQPBFTYHAJR36GyoUKP1Xwzkb`
-- ETH、BNB、MATIC 网络：`0xFdc9ad32454FA4fc4733270FCc12ddBFb68b83F7`
-- 比特币网络：`bc1qpys2nefgsjjgae3g3gqy9crsv3h3rm96tlkz0v`
-- Dogecoin 网络：`DJAocBAu8y6LwhDKUktLAyzV8xyoFeHH6R`
-- TON 网络：`EQAVf-7hAXHlF-jmrKE44oBwN7HGQFVBLAtrOsev5K4qR4P8`
+- USDT•TRON (TRC20)：`TXWN1uwo9X6mXizcb4hJPTquEmvWWgMftU`
+- USDT•BNB Smart Chain (BEP20)：`0xeC3f0fb7B6F4003A903bB3d75853115dCA6BF078`
 
 
 感谢您的支持！

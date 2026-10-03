@@ -1,5 +1,9 @@
 # Mr.shaw 扩展接口与更新规范
 
+## MR-20261003-DONATION-LINK：Fork 捐赠入口
+
+只更改前端 `DONATION_URL` 和中英文 README 的捐赠说明，不是 API 或收款服务。API、数据库、Node 通道、订阅、认证、证书、端口、环境文件、数据卷及 Xray v26.3.27 均无变化；Node/scripts 无需配对构建或服务器更新。[发布记录](docs/DONATION_LINK_RELEASE.md)。
+
 ## MR-20261003-EGRESS-UDP：住宅出口合同扩展（镜像已发布，服务器验收待完成）
 
 没有新增路径或认证：sudo 管理员的 `GET/PUT/DELETE /api/node/{node_id}/egress` 沿用原合同。PUT 新增 `udp_mode=legacy|proxy|tcp_only`（省略 legacy），GET 已配置时返回模式；密码仍不回显。HTTP+proxy 或非法模式 422；旧/离线/能力不足 Node 在保存前 409。非 legacy 需要 `managed-outbounds-v1` 和新增 `managed-outbounds-udp-v1`，重连时重复检查。成功写库只代表异步重启已排队，不代表供应商连通性通过。
@@ -87,7 +91,7 @@ Compatibility note: the current source reads the historical database-pool variab
 当前“捐赠”菜单不是收款接口，也不会调用任何外部收款服务。它由三处组成：
 
 1. 菜单项和点击行为：[`app/dashboard/src/components/Header.tsx`](app/dashboard/src/components/Header.tsx) 的 `Link`、`header.donation` 和 `handleOnClose`。
-2. 菜单跳转地址：[`app/dashboard/src/constants/Project.ts`](app/dashboard/src/constants/Project.ts) 的 `DONATION_URL`。当前值是 `https://github.com/Gozargah/Marzban#donation`，因此点击后会打开上游仓库的捐赠锚点；若要指向本 Fork，应改为 `https://github.com/kissow/Marzban#donation`，然后重新构建前端镜像。
+2. 菜单跳转地址：[`app/dashboard/src/constants/Project.ts`](app/dashboard/src/constants/Project.ts) 的 `DONATION_URL`。当前值是 `https://github.com/kissow/Marzban#donation`，点击后打开本 Fork 的捐赠锚点。修改此常量后必须重新构建主面板镜像并更新服务器；只推送 README 不会替换已经运行的前端。
 3. README 中展示的钱包地址：[`README.md`](README.md) 和 [`README-zh-cn.md`](README-zh-cn.md) 的 `Donation/捐赠` 小节。修改钱包地址时必须同时更新中英文 README，并核对网络名称，不能只改菜单 URL。
 
 当前前端没有独立的捐赠管理页面，也没有捐赠订单、到账监控或二维码生成逻辑。若以后要接入数字货币收款，应作为独立支付功能开发，不能把钱包地址硬编码到管理端或用户端脚本中。

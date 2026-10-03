@@ -1,5 +1,9 @@
 # Marzban 开源扩展功能
 
+## MR-20261003-DONATION-LINK：捐赠入口维护
+
+原捐赠菜单保持原结构与主题，只将目标改为本 Fork README 的 Donation 锚点；中英文说明同步维护者提供的地址，并区分 Fork 与上游捐赠。不是新增支付、到账监控或二维码功能。API、数据库、Node/scripts、证书、端口、订阅与核心均无变化；[变更及发布证据](docs/DONATION_LINK_RELEASE.md)。
+
 ## MR-20261003-EGRESS-UDP（镜像已发布，服务器验收待完成）
 
 每个 Node 的住宅出口新增 UDP 处理；保留原主题、证书、端口及原表单宽度。`legacy` 保持原样，`proxy` 要求 SOCKS 供应商支持 UDP，`tcp_only` 默认 DNS 经住宅代理 TCP、其他默认 UDP 阻断。原显式路由优先，不新增直连降级；不是通用 UDP 转 TCP。主面板增加 `udp_mode` 和 additive 迁移；新模式要求配对 Node `managed-outbounds-udp-v1`。主面板/Node 都需配对更新，scripts 运行时无变化、配对文档已更新，核心仍 v26.3.27。测试与限制见 [功能合同](docs/NODE_EGRESS_UDP.md)；真实 UI/手机/供应商验收待完成，下方历史发布记录不包含本功能。

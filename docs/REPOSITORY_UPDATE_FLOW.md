@@ -1,5 +1,9 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
+## MR-20261003-DONATION-LINK：捐赠入口（2026-10-03）
+
+主面板只修改前端捐赠常量及中英文 README；补齐更新记录、接口说明和发布清单。Node/scripts 代码与文档合同均无变化，不需配对构建或服务器更新；所有 API、数据库、Node 通道、订阅、证书、端口、环境、数据卷及固定核心 v26.3.27 保持原样。常量变更须构建新主面板镜像，README 推送立即生效但不更新已部署前端。[测试/提交/构建/镜像/服务器记录](DONATION_LINK_RELEASE.md)。
+
 ## MR-20261003-EGRESS-UDP：每 Node UDP 兼容（镜像已发布，服务器验收待完成）
 
 主面板：原 Chakra 表单增加 UDP 处理；现有 egress GET/PUT 新增 `udp_mode`，additive 迁移 `7e8f9012ab34`，旧记录 legacy。Node：能力 `managed-outbounds-udp-v1`、配置通道字段和默认 DNS TCP/UDP 路由处理、原子校验。scripts：运行时无变化，配对文档已更新并通过 Actions 检查。证书、端口、环境、数据卷和核心 v26.3.27 保留。不改 HWID 策略。

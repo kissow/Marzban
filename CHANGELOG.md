@@ -1,5 +1,12 @@
 # Mr.shaw Marzban Fork 更新记录
 
+## MR-20261003-DONATION-LINK：捐赠入口指向本 Fork（2026-10-03）
+
+- 按维护者本地修改，将前端捐赠链接指向 `kissow/Marzban#donation`，同步中英文 README 的两组 USDT 地址；BNB Smart Chain 标签规范为 BEP20。
+- 明确这些地址支持 Mr.shaw 社区 Fork，保留上游署名、许可证和原项目捐赠说明链接；未修改 Header 结构或 Chakra 主题。
+- API、数据库、订阅、Node 通道、证书、端口、环境、用户数据及 Xray v26.3.27 无变化；Node/scripts 无变化，无需更新。主面板常量变更需要新镜像。
+- 测试、提交、Actions、镜像和服务器状态分别登记于 [发布记录](docs/DONATION_LINK_RELEASE.md)；不沿用前一功能的镜像证据。
+
 ## MR-20261003-EGRESS-UDP：每个 Node 独立 UDP 处理（镜像已发布，服务器验收待完成）
 
 - 原 Chakra 住宅出口表单新增 UDP 处理：默认保持原样、SOCKS TCP/UDP、仅 TCP 兼容；桌面三排双列，手机单列，未修改证书、节点端口或原弹窗宽度。
