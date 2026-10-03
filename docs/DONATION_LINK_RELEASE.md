@@ -15,7 +15,7 @@
 - 本地差异检查：`git diff --check` 通过；只包含捐赠常量/说明和本次文档，不提交原有 untracked 文件或缓存。
 - 主面板完整后端 unittest 54 项、TypeScript noEmit、Vite 生产构建：通过；保留既有依赖弃用提示和 Vite 大包警告，无错误。
 - 构建产物捐赠目标检查：生产 JS 包包含 Fork 捐赠地址且不含旧菜单目标；中英文 README 两组地址一致。
-- 源提交与 GitHub 推送：待完成。
-- Actions：待完成。
-- GHCR latest index/amd64/arm64 digest 与 OCI revision：待完成；旧功能证据不能代替本次构建。
+- 源提交：`e72943b6dad1abf6ccd58307cb1008bd6793d81f`，已推送 `kissow/Marzban` 的 master，并通过 GitHub API 核对远程提交。
+- Actions：[37123809995](https://github.com/kissow/Marzban/actions/runs/37123809995)，workflow `build.yml` 自动触发，登记时正在运行；不得标记为构建成功或镜像已发布。
+- GHCR latest index/amd64/arm64 digest 与 OCI revision：尚未核对本次新镜像；旧功能证据不能代替本次构建。后续文档提交使用 `[skip ci]`，不改变本次镜像对应的源 SHA。
 - 服务器点击验收：待维护者更新后确认；这不是已通过的服务器验收。

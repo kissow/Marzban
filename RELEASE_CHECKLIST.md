@@ -4,8 +4,9 @@
 
 - [x] 维护者提供地址；中英文 README、前端目标和接口说明保持一致，注明 Fork 受支持方并保留上游致谢/许可证。
 - [x] Header/主题/布局无变化；API、数据库、Node 通道、订阅、证书、端口、用户数据和 Xray v26.3.27 无变化。Node/scripts 无需更新。
-- [x] 主面板 54 项后端测试、TS/Vite 通过；差异检查及产物目标另行核对。
-- [ ] 提交/推送、Actions 和新镜像 index/架构 digest/OCI revision 核对。
+- [x] 主面板 54 项后端测试、TS/Vite、差异检查、生产 JS 目标和中英文地址一致性检查通过。
+- [x] 源提交 e72943b 已推送 master，GitHub API 核对通过；Actions 37123809995 自动触发。
+- [ ] Actions 成功与新镜像 index/架构 digest/OCI revision 核对；登记时构建仍在运行。
 - [ ] 服务器更新后点击捐赠入口验收。
 
 实际结果及边界统一登记于 [DONATION_LINK_RELEASE.md](docs/DONATION_LINK_RELEASE.md)，不得把推送完成写成镜像已发布。钱包地址为维护者提供，未做链上归属或转账验证。
