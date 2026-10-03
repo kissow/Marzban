@@ -6,7 +6,7 @@
 
 主面板：代码及接口文档变化；Node：仅配对文档，运行时代码无变化，不需重新构建或服务器更新；scripts：无变化。没有新增数据库迁移、端口、认证通道或配置参数；UI、证书、环境文件、用户数据、数据卷及固定核心 v26.3.27 保持原样。后端/前端/差异检查、Git push、Actions、GHCR digest 已完成；服务器验收仍待执行，此前服务器通过记录不能代替这次回归验收。
 
-发布证据：主面板 commit `44397842bab52acbd49672a6812958b9fea17f28` / Actions `37087589319` / GHCR `latest` index `sha256:a0818c18627358f2b8e7eaf3e33e20056625acaa0a663fe578c6446cb4bfb51f`；配对 Node commit `91fbf0484127b1fe3fc34b34c49d862ad6a2c320` / Actions `37087589432` / GHCR `latest` index `sha256:ab72518f962f44f2f6594f14f9cbf95332125acb4079a94b71423fdb02b129d7`。Node 本轮无运行时代码变化。
+发布证据：主面板源 commit `37bab0b113c44ccb2a9db6230ac982b7d2a889a1` / Actions `37090609233` / GHCR `latest` index `sha256:c4bbe88b5b547bbdca3d6b8a4bf1e7c92aeb29ae50b36cd758b7c6eccae2edfc`；配对 Node 源 commit `c135743d1ad26d45538e4c6c7a65a9c6693856a8` / Actions `37090612247` / GHCR `latest` index `sha256:21340918298f0b8647fb7eb360294334891fc219e280a75af5d133c66ee9fbc1`。Node 本轮无运行时代码变化。
 
 原 2026-10-02 发布记录保留为历史证据；后续以本条及发布清单为最新状态。旧无 HWID 428 / 仅私有账号行为已废弃。API 详情见 [接口文档](../MR_SHAW_API_AND_RELEASE.md)。
 

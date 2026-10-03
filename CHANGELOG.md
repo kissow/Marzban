@@ -7,7 +7,7 @@
 - 明确兼容边界：不带 HWID 的客户端走共享账号，不能强制执行 HWID 限额，也能绕过这一限额。登记数量不是物理设备数或实时在线数；Node 策略 ACK 不是所有客户端被拦截的证明。
 - 新增真实 ASGI 路由回归、共享/独立账号同步与 XTLS 传输规则测试；没有 UI、数据库迁移、Node 通道、脚本、证书、端口、环境文件或核心版本变化，Xray 仍为 `v26.3.27`。
 - 本条替代下方历史条目的“必须 HWID / 只加载设备账号 / 无 HWID 返回 428”行为。服务器先前确认后又报告订阅失败，故本轮服务器验收重新待完成；不能沿用此前通过结论。
-- 发布证据：主面板 commit `44397842bab52acbd49672a6812958b9fea17f28`、Actions `37087589319`、GHCR `latest` index `sha256:a0818c18627358f2b8e7eaf3e33e20056625acaa0a663fe578c6446cb4bfb51f`；配对 Node commit `91fbf0484127b1fe3fc34b34c49d862ad6a2c320`、Actions `37087589432`、GHCR `latest` index `sha256:ab72518f962f44f2f6594f14f9cbf95332125acb4079a94b71423fdb02b129d7`。两个仓库正式 Xray 均为 `v26.3.27`。
+- 发布证据：主面板源 commit `37bab0b113c44ccb2a9db6230ac982b7d2a889a1`、Actions `37090609233`、GHCR `latest` index `sha256:c4bbe88b5b547bbdca3d6b8a4bf1e7c92aeb29ae50b36cd758b7c6eccae2edfc`；配对 Node 源 commit `c135743d1ad26d45538e4c6c7a65a9c6693856a8`、Actions `37090612247`、GHCR `latest` index `sha256:21340918298f0b8647fb7eb360294334891fc219e280a75af5d133c66ee9fbc1`。两个仓库正式 Xray 均为 `v26.3.27`。
 
 ## 2026-10-02 设备专属凭据与 Node 新连接拒绝（镜像已发布，服务器验收待完成）
 

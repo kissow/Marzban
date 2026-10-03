@@ -7,7 +7,7 @@
   </a>
 </p>
 
-> **Release status (2026-10-03):** `master` commit `44397842bab52acbd49672a6812958b9fea17f28` is pushed and its GitHub Actions run `37087589319` succeeded. `ghcr.io/kissow/marzban:latest` is published with index digest `sha256:a0818c18627358f2b8e7eaf3e33e20056625acaa0a663fe578c6446cb4bfb51f`. Server update and acceptance are still pending; this is not yet a stable production release. The paired Node image is recorded in the Node repository.
+> **Release status (2026-10-03):** `master` source commit `37bab0b113c44ccb2a9db6230ac982b7d2a889a1` is pushed and its GitHub Actions run `37090609233` succeeded. `ghcr.io/kissow/marzban:latest` is published with index digest `sha256:c4bbe88b5b547bbdca3d6b8a4bf1e7c92aeb29ae50b36cd758b7c6eccae2edfc`. Server update and acceptance are still pending; this is not yet a stable production release. The paired Node image is recorded in the Node repository.
 
 <h1 align="center"/>Marzban</h1>
 

@@ -12,7 +12,7 @@
 
 原鉴权、账号状态、到期与 token 错误行为保持不变；上表的 200 以原订阅有效为前提。无 HWID 或共享配置复制可以绕过 HWID 限额，因此不宣称全客户端或物理设备强制限制。`policy_enforcement` / `direct_connection_enforced` 原 ACK 字段不变，只表示合同/独立凭据支持，不证明所有客户端已被拦截。Node/scripts 运行时、UI、数据库 schema、证书、端口和 Xray `v26.3.27` 无变化；无需 Node 更新。回退使用更新前保存的镜像与配置；回退会重新带回旧版无 HWID 的订阅问题，不删除设备记录或数据卷。发布与服务器验收状态见发布清单。
 
-发布证据：主面板 commit `44397842bab52acbd49672a6812958b9fea17f28` / Actions `37087589319` / GHCR `latest` index `sha256:a0818c18627358f2b8e7eaf3e33e20056625acaa0a663fe578c6446cb4bfb51f`；配对 Node commit `91fbf0484127b1fe3fc34b34c49d862ad6a2c320` / Actions `37087589432` / GHCR `latest` index `sha256:ab72518f962f44f2f6594f14f9cbf95332125acb4079a94b71423fdb02b129d7`。镜像已经发布，服务器验收仍待完成。
+发布证据：主面板源 commit `37bab0b113c44ccb2a9db6230ac982b7d2a889a1` / Actions `37090609233` / GHCR `latest` index `sha256:c4bbe88b5b547bbdca3d6b8a4bf1e7c92aeb29ae50b36cd758b7c6eccae2edfc`；配对 Node 源 commit `c135743d1ad26d45538e4c6c7a65a9c6693856a8` / Actions `37090612247` / GHCR `latest` index `sha256:21340918298f0b8647fb7eb360294334891fc219e280a75af5d133c66ee9fbc1`。镜像已经发布，服务器验收仍待完成。
 
 ## 2026-10-02 本地接口增补（未发布）
 
