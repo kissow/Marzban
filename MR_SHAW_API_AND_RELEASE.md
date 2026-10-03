@@ -180,3 +180,10 @@ Node 通道、能力标识、最低配对版本和旧 Node 行为：
 ```
 
 删除接口不能只删除路由：必须记录旧客户端的错误行为、替代路径、数据迁移和恢复方法。只改 UI 或文案时，也要明确写出 `API、数据库、Node 通道、证书和端口无变化`，避免把 UI 变化误当成接口发布。
+## MR-20261003-NODE-CONNECT / SCHEDULER-DEPENDENCY 接口登记
+
+本轮不新增或修改公开 API 路径、权限、请求/响应字段和数据库 schema。
+既有 `POST /api/node/{node_id}/reconnect` 仍异步执行；主控先建立 Node 认证会话，
+再执行非 legacy 出口健康/能力检查和启动；失败原因仍使用节点原有 `message`。
+Node REST/RPyC 线协议不变，已配对 Node/scripts 不需本轮更新，Xray v26.3.27 不变。
+APScheduler 锁定 3.11.3；仅主控依赖变化。[合同、测试和发布记录](docs/NODE_CONNECTION_RELEASE.md)。

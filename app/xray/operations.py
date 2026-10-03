@@ -388,6 +388,9 @@ def connect_node(node_id, config=None):
         _change_node_status(node_id, NodeStatus.connecting)
         logger.info(f"Connecting to \"{dbnode.name}\" node")
 
+        if not node.connected:
+            node.connect()
+
         if config is None:
             config = xray.config.include_db_users()
         config = for_node(config, egress, node.get_health()
@@ -402,7 +405,7 @@ def connect_node(node_id, config=None):
 
     except Exception as e:
         _change_node_status(node_id, NodeStatus.error, message=str(e))
-        logger.info(f"Unable to connect to \"{dbnode.name}\" node")
+        logger.info(f"Unable to connect to \"{dbnode.name}\" node: {e}")
 
     finally:
         try:

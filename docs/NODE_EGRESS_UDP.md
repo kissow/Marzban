@@ -1,5 +1,9 @@
 # 每个 Node 的住宅出口 UDP 策略
 
+初连执行顺序修复（2026-10-03）：非 legacy 出口的健康/能力检查前必须先建立
+现有认证会话，然后启动 Node。UDP 模式/能力标识和线协议不变，已配对 Node 本轮不需更新。
+修复与依赖维护的发布状态见 [NODE_CONNECTION_RELEASE.md](NODE_CONNECTION_RELEASE.md)。
+
 变更编号：`MR-20261003-EGRESS-UDP`。日期：2026-10-03。状态：代码和配对镜像已发布，实际服务器/手机/供应商/UI 截图验收待完成，未标记稳定版。作者：Mr.shaw。源 SHA、Actions 与 GHCR/OCI 证据见 [发布记录](EGRESS_UDP_RELEASE.md)。
 
 ## 为什么按 Node 设置

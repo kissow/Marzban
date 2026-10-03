@@ -1,3 +1,5 @@
+> **Node connection / scheduler maintenance (2026-10-03, pending publication):** Establish the existing authenticated Node session before the non-legacy egress health check; preserve the failure reason. Pin APScheduler 3.11.3 without the deprecated pkg_resources import. No API/schema/UI/certificate/port/HWID/Xray changes; already paired Nodes and scripts need no new update. [Compatibility, tests and release evidence](docs/NODE_CONNECTION_RELEASE.md). The image records below describe earlier releases.
+
 <p align="center">
   <a href="https://github.com/gozargah/marzban" target="_blank" rel="noopener noreferrer">
     <picture>

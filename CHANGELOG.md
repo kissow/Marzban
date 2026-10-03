@@ -1,5 +1,14 @@
 # Mr.shaw Marzban Fork 更新记录
 
+## MR-20261003-SCHEDULER-DEPENDENCY：移除 APScheduler `pkg_resources` 弃用警告（2026-10-03）
+
+- 将 `APScheduler` 从 `3.9.1.post1` 升级并锁定到 `3.11.3`。新版使用 `importlib.metadata`，不再导入已弃用的 `pkg_resources`；不是屏蔽警告。
+- 移除 requirements 中的 `setuptools<81` 兼容上限和 Docker 中为旧调度器单独安装 setuptools 的步骤。调度器仍使用原有 BackgroundScheduler、UTC、interval、coalesce 和 max_instances 设置。
+- 已验证调度器启动/关闭、UTC 任务注册和项目完整 `unittest discover`（新增 6 项后 69/69）通过；TypeScript/Vite、pip check 和 diff 检查通过。其余 SQLAlchemy/Pydantic 的弃用提示属于独立后续依赖迁移，不影响本次通过结果。
+- 主控连接修复同时保留：首次连接先建立 Node 会话，再执行健康检查和启动；失败原因写入节点状态。数据库、用户数据、API 路径、Node 运行时代码、证书、端口和 Xray `v26.3.27` 不变；本轮 Node 无需更新。
+- 本条在新提交和 GitHub Actions 成功后才可标记为镜像发布；服务器更新与验收另行记录。
+- 根因、现有接口执行顺序、跨仓库兼容、依赖升级、测试与发布证据统一见 [NODE_CONNECTION_RELEASE.md](docs/NODE_CONNECTION_RELEASE.md)。历史 setuptools 锁定记录保留作排障历史，不代表当前依赖。
+
 ## MR-20261003-DONATION-LINK：捐赠入口指向本 Fork（2026-10-03）
 
 - 按维护者本地修改，将前端捐赠链接指向 `kissow/Marzban#donation`，同步中英文 README 的两组 USDT 地址；BNB Smart Chain 标签规范为 BEP20。
