@@ -1,11 +1,12 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
-## MR-20261003-SCHEDULER-DEPENDENCY：调度器与 Node 初连修复（2026-10-03，本地通过，待发布）
+## MR-20261003-SCHEDULER-DEPENDENCY：调度器与 Node 初连修复（2026-10-03，镜像已发布，服务器验收待完成）
 
 - 根因：`connect_node()` 在未建立 Node 会话时先调用健康检查，非 legacy 出口首次连接会得到 `Node is not connected`。
 - 修复：先调用既有 `node.connect()`，再执行健康/能力检查和 `start()`；异常原因写入节点状态，供原版重连按钮排障。Node 运行时代码不变。
 - 依赖：主控 APScheduler 升至 `3.11.3`，移除 `pkg_resources` 弃用路径；调度器 API、UTC 和任务参数保持原样。主控完整测试 69/69、TypeScript/Vite、pip check、diff 检查通过。
 - 边界：API、数据库、证书、端口、用户数据、订阅协议和 Xray `v26.3.27` 不变；Node/scripts 本轮无需更新。新提交、Actions、镜像和服务器验收必须单独记录。
+- 发布：源 `78e7b8e`、Actions `37135175798` 首次成功，latest index 与两架构 OCI revision 已核对；具体摘要见 [发布证据](NODE_CONNECTION_RELEASE.md)。服务器更新/真实网络验收未执行，不能把镜像发布当作服务器验收。
 
 
 ## MR-20261003-DONATION-LINK：捐赠入口（2026-10-03）

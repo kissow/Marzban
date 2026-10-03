@@ -1,7 +1,7 @@
 # Node 初连与 APScheduler 依赖维护
 
 编号：MR-20261003-NODE-CONNECT / MR-20261003-SCHEDULER-DEPENDENCY。
-日期：2026-10-03。维护者：Mr.shaw。状态：本地回归通过，待提交/发布本轮镜像；服务器验收待完成。
+日期：2026-10-03。维护者：Mr.shaw。状态：本地与 Linux CI 通过，本轮主控镜像已发布并核对；服务器验收待完成。
 
 ## 根因与修复
 
@@ -53,7 +53,13 @@ https://apscheduler.readthedocs.io/en/3.x/versionhistory.html （3.10.2 已替�
 - TypeScript `tsc --noEmit` 与 Vite 生产构建通过；仍有既有的大 chunk 提示，不是构建失败。产物仅在项目 `.cache/verification/node-connect-dashboard`。
 - `pip check` 无依赖冲突，`git diff --check` 通过（修复文档末尾空行后）；未屏蔽运行时弃用提示。
 - 本地验证不代替干净 Linux Actions、双架构镜像及服务器验收；不复用上一次镜像摘要。
-- 新源 SHA、Actions run、GHCR index/amd64/arm64 digest 与 OCI revision：待本轮提交/构建。
+- 源提交：`78e7b8e6180f78ed329f94d348a73f4c6cf1bdc3`，已推送 `kissow/Marzban` master。
+- Actions：[37135175798](https://github.com/kissow/Marzban/actions/runs/37135175798) 首次成功；干净 Linux 后端 69/69、TypeScript/Vite、正式核心版本闸门和双架构构建/发布均通过。
+- 本轮 `ghcr.io/kissow/marzban:latest` index：`sha256:9d3b20eba4e19994df9f5170f8ef3a5eaa81c3f846ab12e5f486f2c287bc2880`。
+- Linux amd64：`sha256:059318345f7cb97584d99cf647f77afd516ed64da33e47f578d96e6097c4a531`；Linux arm64：`sha256:143b163f0f59e3da45c825c8a3ec5f6d0ad4309bd878528f775accff5a1ebd83`。
+- 发布核对：通过匿名 GHCR manifest/config 读取，两个架构 OCI revision 均等于源提交；不沿用历史 digest。Actions 完成时间 `2026-10-03T16:07:50Z`。后续仅文档证据提交使用 `[skip ci]`，不重复构建同份运行时。
+- CI 中仍可见 datetime/Pydantic 弃用、Vite chunk 和 Actions runner 的 Node 弃用提示；无 APScheduler `pkg_resources` 弃用导入警告，相关回归测试通过。不宣称全部警告清零。
+- 服务器更新/真实网络验收：待维护者执行，未远程修改生产服务器。
 
 ## 服务器验收与回退
 

@@ -1,8 +1,10 @@
 # Marzban 开源扩展功能
 
-## MR-20261003-SCHEDULER-DEPENDENCY：调度器依赖维护（本地通过，待发布）
+## MR-20261003-SCHEDULER-DEPENDENCY：调度器依赖维护（镜像已发布，服务器验收待完成）
 
 APScheduler 已从 `3.9.1.post1` 升级并锁定为 `3.11.3`，移除旧版本导入 `pkg_resources` 产生的弃用警告。调度器仍使用原有 BackgroundScheduler、UTC、interval、coalesce 和 max_instances 配置；不新增菜单、API、数据库字段、Node 通道、证书、端口或 Xray 功能。主控连接修复与本条一起验证，Node 运行时代码本轮无需更新。
+
+本地/Linux CI 69/69 与前端构建通过；源 `78e7b8e`、Actions `37135175798` 成功，双架构 latest 与 OCI revision 已核对。服务器真实网络验收待完成。[发布证据和兼容边界](docs/NODE_CONNECTION_RELEASE.md)。
 
 ## MR-20261003-DONATION-LINK：捐赠入口维护
 

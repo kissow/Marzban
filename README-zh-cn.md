@@ -1,4 +1,4 @@
-> **节点初连/调度器维护（2026-10-03，发布待完成）：** 非 legacy 出口先建立已有认证会话，再检查健康并启动；保留具体错误原因。APScheduler 固定到 3.11.3，消除 pkg_resources 弃用依赖。API/数据库/UI/证书/端口/HWID/Xray 不变，已配对 Node 与 scripts 本轮不需更新。[兼容、测试和发布证据](docs/NODE_CONNECTION_RELEASE.md)。下方镜像记录属于此前发布。
+> **节点初连/调度器维护（2026-10-03，镜像已发布，服务器验收待完成）：** 非 legacy 出口先建立已有认证会话，再检查健康并启动；保留具体错误原因。APScheduler 固定到 3.11.3，消除 pkg_resources 弃用依赖。本地/Linux CI 69/69、前端检查通过；源 `78e7b8e`、Actions `37135175798` 成功，双架构 latest 和 OCI revision 已核对。API/数据库/UI/证书/端口/HWID/Xray 不变，已配对 Node 与 scripts 本轮不需更新。[兼容、测试和发布证据](docs/NODE_CONNECTION_RELEASE.md)。下方镜像记录属于此前发布。
 
 <p align="center">
   <a href="https://github.com/gozargah/marzban" target="_blank" rel="noopener noreferrer">

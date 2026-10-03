@@ -1,13 +1,15 @@
 # Marzban 主面板发布清单
 
-## MR-20261003-SCHEDULER-DEPENDENCY（本地通过，待发布）
+## MR-20261003-SCHEDULER-DEPENDENCY（镜像已发布，服务器验收待完成）
 
 - [x] APScheduler `3.11.3` 已替换旧 `3.9.1.post1`；不再依赖 `pkg_resources`，Docker 不再锁定旧 setuptools。
 - [x] 调度器 API、UTC 任务注册/退出和主控完整 unittest `69/69` 通过，含 6 项调度器回归。
 - [x] TypeScript/Vite 生产构建、pip check 与 git diff 检查通过；既有 chunk 和其他弃用提示单独登记。
 - [x] 主控连接修复已加入回归测试：先 connect，再 health/start；失败原因保留。
 - [x] API、数据库、Node 运行时代码、证书、端口、用户数据和 Xray `v26.3.27` 无变化；Node/scripts 无需更新。
-- [ ] 新提交推送、GitHub Actions、GHCR 镜像 digest 和服务器验收待完成。
+- [x] 源 `78e7b8e` 已推送；Actions `37135175798` 首次成功，干净 Linux 后端 69/69 与前端检查通过。
+- [x] 本轮 GHCR latest index/amd64/arm64 digest 与两架构 OCI revision 已核对，见 [发布证据](docs/NODE_CONNECTION_RELEASE.md)。
+- [ ] 主控服务器更新后检查节点初连、原版重新连接、订阅和应用访问；未远程执行更新或验收。已配对 Node 不需再次更新。
 
 发布状态只能在 Actions 和镜像证据核对后更新；本地测试通过不等于线上镜像已发布。
 
