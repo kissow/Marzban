@@ -1,5 +1,13 @@
 # Mr.shaw Marzban Fork 更新记录
 
+## MR-20261003-EGRESS-UDP：每个 Node 独立 UDP 处理（本地，未发布）
+
+- 原 Chakra 住宅出口表单新增 UDP 处理：默认保持原样、SOCKS TCP/UDP、仅 TCP 兼容；桌面三排双列，手机单列，未修改证书、节点端口或原弹窗宽度。
+- 既有 egress API 新增 `udp_mode`；新增仅添加字段的迁移 `7e8f9012ab34`，旧配置默认 legacy、密码加密与留空保留规则不变。
+- 非 legacy 必须配对 Node 的 `managed-outbounds-udp-v1`，保存前及重连时检查。兼容模式 DNS 经住宅代理 TCP，其他默认 UDP 阻断；原显式路由保留，不保证任意 UDP 应用可用或全流量防泄漏。
+- 主面板 54 项、Node 48 项本地测试通过；TS/Vite/真实原组件预览构建通过，截图审核、Linux/实际供应商/手机验收待完成。未推送、未构建发布镜像；下方历史 digest 不包含此功能。
+- 主面板和 Node 均有运行时变化，发布时需要配对更新；scripts 无变化，Xray 保持 v26.3.27。合同与边界见 [NODE_EGRESS_UDP.md](docs/NODE_EGRESS_UDP.md)。
+
 ## 2026-10-03 普通订阅客户端兼容修复（镜像已发布，服务器验收待完成）
 
 - 修复开启 `reject_new` 后普通客户端因不带 `X-HWID` 而全部收到 `428`、无法导入订阅的问题；无 HWID 请求恢复原共享凭据订阅，不登记设备。

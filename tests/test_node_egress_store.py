@@ -72,6 +72,20 @@ class NodeEgressStoreTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "JWT secret is not initialized"):
             store._cipher(db)
 
+    def test_modes_are_node_local_and_password_is_preserved(self):
+        db = FakeDB()
+        first = types.SimpleNamespace(egress=None)
+        second = types.SimpleNamespace(egress=None)
+        profile = {"protocol": "socks", "server": "proxy.example.net", "port": 1080,
+                   "username": "alice", "password": "secret-password"}
+        store.save_egress(db, first, profile)
+        store.save_egress(db, second, {**profile, "udp_mode": "proxy"})
+        encrypted = first.egress.encrypted_password
+        store.save_egress(db, first, {**profile, "password": None, "udp_mode": "tcp_only"})
+        self.assertEqual(first.egress.encrypted_password, encrypted)
+        self.assertEqual(store.public_egress(db, first)["udp_mode"], "tcp_only")
+        self.assertEqual(store.read_egress(db, second)["udp_mode"], "proxy")
+
     def test_updating_a_node_keeps_one_row_and_existing_password(self):
         db = FakeDB()
         node = types.SimpleNamespace(egress=None)

@@ -36,6 +36,7 @@ def read_egress(db, dbnode):
     return {
         "tag": "managed-residential-egress",
         "protocol": row.protocol,
+        "udp_mode": row.udp_mode,
         "server": row.server,
         "port": row.port,
         "username": row.username,
@@ -51,6 +52,7 @@ def public_egress(db, dbnode):
     return {
         "configured": True,
         "protocol": row.protocol,
+        "udp_mode": row.udp_mode,
         "server": row.server,
         "port": row.port,
         "username": row.username,
@@ -77,6 +79,7 @@ def save_egress(db, dbnode, profile):
         row = NodeEgress(node=dbnode)
         db.add(row)
     row.protocol = value["protocol"]
+    row.udp_mode = value["udp_mode"]
     row.server = value["server"]
     row.port = value["port"]
     row.username = value["username"]

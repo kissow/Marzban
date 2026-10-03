@@ -31,14 +31,14 @@ router = APIRouter(
 )
 
 
-def require_managed_egress(dbnode):
+def require_managed_egress(dbnode, udp_mode="legacy"):
     """Ensure the connected Node understands managed outbound profiles."""
     node = xray.nodes.get(dbnode.id)
     try:
         health = node.get_health() if node is not None else None
     except Exception:
         health = None
-    if not supports_egress(health):
+    if not supports_egress(health, udp_mode):
         raise HTTPException(
             status_code=409,
             detail="Upgrade and connect the paired Marzban-Node before setting egress",
@@ -159,7 +159,7 @@ def update_node_egress(
     db: Session = Depends(get_db),
     _: Admin = Depends(Admin.check_sudo_admin),
 ):
-    require_managed_egress(dbnode)
+    require_managed_egress(dbnode, settings.udp_mode)
     try:
         save_egress(db, dbnode, settings.model_dump())
     except ValueError as exc:

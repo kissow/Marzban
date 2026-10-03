@@ -27,6 +27,11 @@ def validate_egress(profile):
     protocol = profile.get("protocol")
     if protocol not in ("http", "socks"):
         raise ValueError("Only HTTP and SOCKS proxy outbounds are supported")
+    udp_mode = profile.get("udp_mode", "legacy")
+    if udp_mode not in ("legacy", "proxy", "tcp_only"):
+        raise ValueError("Invalid egress UDP mode")
+    if udp_mode == "proxy" and protocol != "socks":
+        raise ValueError("UDP proxy mode requires SOCKS5")
     server = _validate_server(profile.get("server"))
     port = profile.get("port")
     if type(port) is not int or not 1 <= port <= 65535:
@@ -40,6 +45,7 @@ def validate_egress(profile):
     return {
         "tag": "managed-residential-egress",
         "protocol": protocol,
+        "udp_mode": udp_mode,
         "server": server,
         "port": port,
         "username": username,
@@ -47,15 +53,16 @@ def validate_egress(profile):
     }
 
 
-def supports_egress(health):
+def supports_egress(health, udp_mode="legacy"):
     """Only a paired custom Node may receive the managed extension."""
     if not isinstance(health, dict) or health.get("source") != "node-runtime":
         return False
     capabilities = health.get("capabilities")
-    return isinstance(capabilities, list) and "managed-outbounds-v1" in capabilities
+    return (isinstance(capabilities, list) and "managed-outbounds-v1" in capabilities
+            and (udp_mode == "legacy" or "managed-outbounds-udp-v1" in capabilities))
 
 
-def for_node(config, profile):
+def for_node(config, profile, health=None):
     """Copy the config and add an extension understood only by the custom Node.
 
     The original XRayConfig is never touched. Rejection by old Nodes is safer
@@ -64,6 +71,8 @@ def for_node(config, profile):
     if profile is None:
         return config
     outbound = validate_egress(profile)
+    if outbound["udp_mode"] != "legacy" and not supports_egress(health, outbound["udp_mode"]):
+        raise ValueError("Upgrade the paired Marzban-Node to use this egress UDP mode")
     result = deepcopy(config)
     if "marzban_node_extensions" in result:
         raise ValueError("Xray config already contains a Node extension")
@@ -77,4 +86,7 @@ def for_node(config, profile):
         ],
         "default_outbound_tag": outbound["tag"],
     }
+    # Do not send a new field to legacy Nodes: old behavior remains compatible.
+    if outbound["udp_mode"] != "legacy":
+        result["marzban_node_extensions"]["outbounds"][0]["udp_mode"] = outbound["udp_mode"]
     return result

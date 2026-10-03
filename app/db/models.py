@@ -365,6 +365,7 @@ class NodeEgress(Base):
 
     node_id = Column(Integer, ForeignKey("nodes.id", ondelete="CASCADE"), primary_key=True)
     protocol = Column(String(8), nullable=False)
+    udp_mode = Column(String(16), nullable=False, default="legacy", server_default="legacy")
     server = Column(String(253), nullable=False)
     port = Column(Integer, nullable=False)
     username = Column(String(256), nullable=True)

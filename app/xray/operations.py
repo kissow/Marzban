@@ -390,7 +390,8 @@ def connect_node(node_id, config=None):
 
         if config is None:
             config = xray.config.include_db_users()
-        config = for_node(config, egress)
+        config = for_node(config, egress, node.get_health()
+                          if egress and egress.get("udp_mode", "legacy") != "legacy" else None)
 
         node.start(config)
         version = node.get_version()
@@ -432,7 +433,8 @@ def restart_node(node_id, config=None):
 
         if config is None:
             config = xray.config.include_db_users()
-        config = for_node(config, egress)
+        config = for_node(config, egress, node.get_health()
+                          if egress and egress.get("udp_mode", "legacy") != "legacy" else None)
 
         node.restart(config)
         sync_node_device_policies(node_id)

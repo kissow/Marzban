@@ -36,6 +36,26 @@ class NodeEgressTests(unittest.TestCase):
         result = module.for_node(self.config, self.profile(protocol="socks", default=True))
         self.assertEqual(result["marzban_node_extensions"]["default_outbound_tag"], "managed-residential-egress")
 
+    def test_legacy_profile_omits_new_wire_field(self):
+        result = module.for_node(self.config, self.profile())
+        self.assertNotIn("udp_mode", result["marzban_node_extensions"]["outbounds"][0])
+
+    def test_modes_require_new_node_capability_before_dispatch(self):
+        old = {"source": "node-runtime", "capabilities": ["managed-outbounds-v1"]}
+        new = {"source": "node-runtime", "capabilities": ["managed-outbounds-v1", "managed-outbounds-udp-v1"]}
+        for mode in ("tcp_only", "proxy"):
+            profile = self.profile(protocol="socks", udp_mode=mode)
+            with self.assertRaisesRegex(ValueError, "Upgrade"):
+                module.for_node(self.config, profile, old)
+            result = module.for_node(self.config, profile, new)
+            self.assertEqual(result["marzban_node_extensions"]["outbounds"][0]["udp_mode"], mode)
+        self.assertNotIn("marzban_node_extensions", self.config)
+
+    def test_invalid_modes_and_http_udp_are_rejected(self):
+        for overrides in ({"udp_mode": "unknown"}, {"udp_mode": "proxy"}):
+            with self.assertRaises(ValueError):
+                module.validate_egress(self.profile(**overrides))
+
     def test_one_node_cannot_receive_two_outbounds(self):
         with self.assertRaises(ValueError):
             module.for_node(self.config, [self.profile(), self.profile()])

@@ -1,5 +1,18 @@
 # Marzban 主面板发布清单
 
+## MR-20261003-EGRESS-UDP（本地，未发布）
+
+- [x] 原 Chakra 住宅出口表单增加 per-Node UDP 处理；保留原证书、节点端口、开关和宽度，手机单列。
+- [x] 既有 egress API、能力标识、迁移 `7e8f9012ab34` 和密码保留合同已登记；旧数据 legacy，原用户/节点/凭据不删除。
+- [x] 主面板 54 项、Node 48 项完整本地测试通过；固定 Xray v26.3.27，含 8 组解析和 4 项实际 DNS TCP 运行测试。
+- [x] TypeScript、生产 Vite 和真实原组件预览构建通过；没有新增端口、证书或脚本变化。
+- [x] README/FORK_FEATURES/CHANGELOG/API、Node 线协议与工作区 05/08/09 已同步；[边界与验收](docs/NODE_EGRESS_UDP.md)。
+- [ ] 真实桌面/手机截图审核：浏览器本地安全策略校验未通过，不能标为 UI 已验收。
+- [ ] Linux 主面板/Node 认证联调、实际供应商 TCP53、v2rayNG/Clash Meta 同节点对照与 UDP 支持供应商回归。
+- [ ] 获准推送、配对提交、Actions 成功、两镜像 digest/OCI revision、服务器验收记录。
+
+本功能未发布；下方历史发布证据不能当作 UDP 功能已发布。发布后需要配对更新 Node 和主面板，优先 Node；scripts 无变化。非 DNS UDP 阻断目前由路由单元测试覆盖，不是所有真实应用已验证。
+
 ## MR-20261003-HWID-COMPAT（镜像已发布，服务器验收待完成）
 
 - [x] 修复无 HWID 订阅 428；共享账号与独立账号共同加载、同步到主核心和在线 Node。

@@ -68,6 +68,7 @@ class NodeResponse(Node):
 class NodeEgressModify(BaseModel):
     """One outbound proxy configuration for one Marzban-Node."""
     protocol: str = Field(pattern="^(http|socks)$")
+    udp_mode: str = Field("legacy", pattern="^(legacy|proxy|tcp_only)$")
     server: str = Field(min_length=1, max_length=253)
     port: int = Field(ge=1, le=65535)
     username: Optional[str] = Field(None, max_length=256)
@@ -76,6 +77,7 @@ class NodeEgressModify(BaseModel):
 
 class NodeEgressResponse(BaseModel):
     configured: bool
+    udp_mode: str = "legacy"
     protocol: Optional[str] = None
     server: Optional[str] = None
     port: Optional[int] = None

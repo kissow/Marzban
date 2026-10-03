@@ -1,5 +1,5 @@
 import {
-  Alert, AlertIcon, Button, FormControl, FormLabel, HStack, Input,
+  Alert, AlertIcon, Button, FormControl, FormLabel, HStack, Input, Tooltip,
   Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader,
   ModalOverlay, Select, SimpleGrid, Stack, Text, useDisclosure, useToast,
 } from "@chakra-ui/react";
@@ -11,9 +11,11 @@ import { fetch } from "service/http";
 import { generateErrorMessage } from "utils/toastHandler";
 
 type Protocol = "http" | "socks";
+type UdpMode = "legacy" | "proxy" | "tcp_only";
 type Egress = {
   configured: boolean;
   protocol?: Protocol;
+  udp_mode?: UdpMode;
   server?: string;
   port?: number;
   username?: string;
@@ -21,6 +23,7 @@ type Egress = {
 };
 type FormState = {
   protocol: Protocol;
+  udp_mode: UdpMode;
   server: string;
   port: string;
   username: string;
@@ -29,6 +32,7 @@ type FormState = {
 
 const formFrom = (egress?: Egress): FormState => ({
   protocol: egress?.protocol || "http",
+  udp_mode: egress?.udp_mode || "legacy",
   server: egress?.server || "",
   port: String(egress?.port || 1080),
   username: egress?.username || "",
@@ -52,6 +56,7 @@ export const NodeEgressCard: FC<{ nodeId: number; nodeName: string; enabled?: bo
     method: "PUT",
     body: {
       protocol: form.protocol,
+      udp_mode: form.udp_mode,
       server: form.server.trim(),
       port: Number(form.port),
       username: form.username.trim() || null,
@@ -116,8 +121,25 @@ export const NodeEgressCard: FC<{ nodeId: number; nodeName: string; enabled?: bo
               <FormControl>
                 <FormLabel fontSize="sm">{t("nodes.egress.protocol")}</FormLabel>
                 <Select size="sm" value={form.protocol}
-                  onChange={(e) => set("protocol", e.target.value as Protocol)}>
+                  onChange={(e) => setForm((current) => ({ ...current,
+                    protocol: e.target.value as Protocol,
+                    udp_mode: e.target.value === "http" && current.udp_mode === "proxy" ? "legacy" : current.udp_mode,
+                  }))}>
                   <option value="http">HTTP</option><option value="socks">SOCKS5</option>
+                </Select>
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="sm" display="flex" alignItems="center" gap={2}>
+                  {t("nodes.egress.udpMode")}
+                  <Tooltip label={t("nodes.egress.udpHelp")} hasArrow placement="top">
+                    <Text as="span" tabIndex={0} aria-label={t("nodes.egress.udpHelp")}
+                      fontSize="xs" color="gray.500" cursor="help">ⓘ</Text>
+                  </Tooltip>
+                </FormLabel>
+                <Select size="sm" value={form.udp_mode} onChange={(e) => set("udp_mode", e.target.value)}>
+                  <option value="legacy">{t("nodes.egress.udpLegacy")}</option>
+                  <option value="proxy" disabled={form.protocol !== "socks"}>{t("nodes.egress.udpProxy")}</option>
+                  <option value="tcp_only">{t("nodes.egress.udpTcpOnly")}</option>
                 </Select>
               </FormControl>
               <FormControl isRequired>
@@ -135,8 +157,14 @@ export const NodeEgressCard: FC<{ nodeId: number; nodeName: string; enabled?: bo
                 <Input size="sm" value={form.username}
                   onChange={(e) => set("username", e.target.value)} />
               </FormControl>
-              <FormControl gridColumn={{ md: "span 2" }}>
-                <FormLabel fontSize="sm">{t("nodes.egress.password")}</FormLabel>
+              <FormControl>
+                <FormLabel fontSize="sm" display="flex" alignItems="center" gap={2}>
+                  {t("nodes.egress.passwordShort")}
+                  <Tooltip label={t("nodes.egress.password")} hasArrow placement="top">
+                    <Text as="span" tabIndex={0} aria-label={t("nodes.egress.password")}
+                      fontSize="xs" color="gray.500" cursor="help">ⓘ</Text>
+                  </Tooltip>
+                </FormLabel>
                 <Input size="sm" type="password" value={form.password}
                   placeholder={data?.has_password ? "••••••••" : ""}
                   onChange={(e) => set("password", e.target.value)} />

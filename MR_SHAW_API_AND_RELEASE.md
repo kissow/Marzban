@@ -1,5 +1,11 @@
 # Mr.shaw 扩展接口与更新规范
 
+## MR-20261003-EGRESS-UDP：住宅出口合同扩展（本地，未发布）
+
+没有新增路径或认证：sudo 管理员的 `GET/PUT/DELETE /api/node/{node_id}/egress` 沿用原合同。PUT 新增 `udp_mode=legacy|proxy|tcp_only`（省略 legacy），GET 已配置时返回模式；密码仍不回显。HTTP+proxy 或非法模式 422；旧/离线/能力不足 Node 在保存前 409。非 legacy 需要 `managed-outbounds-v1` 和新增 `managed-outbounds-udp-v1`，重连时重复检查。成功写库只代表异步重启已排队，不代表供应商连通性通过。
+
+认证 REST/RPyC 配置通道只添加可选 extension 字段；legacy 为兼容旧 Node 省略此字段。additive 迁移 `7e8f9012ab34` 只增加 `node_egress.udp_mode`，不改用户/节点/凭据。两运行时仓库需要配对发布，scripts/证书/端口/环境/数据卷/核心 v26.3.27 无变化。协议、DNS 替换和显式路由优先级、错误、弃用/回退及验收完整说明见 [NODE_EGRESS_UDP.md](docs/NODE_EGRESS_UDP.md)。当前未推送或发布镜像，线上历史 latest 不包含本功能。
+
 ## 2026-10-03 订阅兼容合同（镜像已发布，服务器验收待完成）
 
 沿用订阅 token 认证、原路径和参数，没有新增接口或迁移：
@@ -124,8 +130,8 @@ docker compose logs --tail=100 marzban
 | `GET /api/nodes` | 列出节点及 ID，供选择 `node_id`；原版接口 | 无 |
 | `GET /api/node/settings` | 原版证书设置，节点安装时使用；不要删除或替换 | 无 |
 | `GET /api/node/{node_id}/health` | 返回此 Node 的 `status`、`reason`、`metrics`，包含采样时间、CPU、内存、根目录磁盘、运行时间、数据来源；主面板可在 `metrics` 中补充最近 2 小时有正流量的去重用户及采样原因；离线或过期时 `metrics=null` | 通过已认证通道读取 Node，并查询主面板 `NodeUserUsage`；不写数据 |
-| `GET /api/node/{node_id}/egress` | 返回 `configured`、协议、服务器、端口、用户名、`has_password`；**不返回密码** | 无 |
-| `PUT /api/node/{node_id}/egress` | 保存该 Node 唯一的 HTTP/SOCKS5 代理。请求字段：`protocol`（`http`/`socks`）、`server`（代理商域名或 IP）、`port`（1–65535）、可选成对的 `username`/`password`。同用户名且密码留空可保留原密码 | 检查 Node 是否声明 `managed-outbounds-v1`；加密保存密码并异步重启该 Node。旧 Node 不支持时返回 409，参数不合法返回 422 |
+| `GET /api/node/{node_id}/egress` | 返回 `configured`、协议、`udp_mode`、服务器、端口、用户名、`has_password`；**不返回密码** | 无；`udp_mode` 为本地未发布扩展 |
+| `PUT /api/node/{node_id}/egress` | 保存该 Node 唯一的 HTTP/SOCKS5 代理。字段：`protocol`（`http`/`socks`）、`server`（代理商域名或 IP）、`port`（1–65535）、可选成对的 `username`/`password`、`udp_mode`（省略 legacy；proxy/tcp_only）。同用户名且密码留空可保留原密码 | 检查 `managed-outbounds-v1`；非 legacy 另检查 `managed-outbounds-udp-v1`；加密保存并异步重启。旧/离线/能力不足 409，参数或 HTTP+proxy 不合法 422；新模式本地未发布 |
 | `DELETE /api/node/{node_id}/egress` | 清除该 Node 的代理设置 | 删除配置并异步重启该 Node，恢复原有默认路由 |
 | `POST /api/node/{node_id}/reconnect` | 原版重连入口；排查离线 Node | 异步重连 |
 
@@ -133,7 +139,7 @@ Node 响应 `source=node-runtime` 与 `capabilities=["managed-outbounds-v1"]` �
 
 节点管理弹窗在节点标题栏下方、证书区上方显示连接状态与原因：`node.message` 有值时优先显示后端原因，否则按 `connecting`、`error`、`disabled` 显示本地化兜底文案。`connecting` 和 `error` 状态提供“重新连接”按钮并调用上面的 `POST /api/node/{node_id}/reconnect`；`disabled` 只显示停用原因，不提供重连按钮。此项只改官方 Chakra UI 的原节点弹窗，不删除证书、端口、启用、保存或删除字段。
 
-住宅代理地址从代理服务商取得，不填 Marzban 主面板地址、Node 地址、Node 的服务端口或 Xray API 端口。HTTP 代理只接管默认 TCP；UDP 仍按原路由。保存操作只是排队重启，HTTP 成功**不等于**住宅代理可连通：还要复查 Node 运行日志、出站公网 IP 和原订阅可用性。本功能尚无代理失效自动摘除和自动回滚。
+住宅代理地址从代理服务商取得，不填 Marzban 主面板地址、Node 地址、Node 的服务端口或 Xray API 端口。legacy 下 HTTP 只接管默认 TCP、UDP 按原路由；未发布新模式的 DNS 上游替换、显式路由优先级及其他 UDP 阻断边界见上方合同。保存操作只是排队重启，HTTP 成功**不等于**住宅代理可连通：还要复查 Node 运行日志、出站公网 IP 和原订阅可用性。本功能尚无代理失效自动摘除和自动回滚。
 
 ## 每次更新必须执行的流程
 

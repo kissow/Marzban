@@ -9,6 +9,8 @@
 
 > **Release status (2026-10-03):** `master` source commit `37bab0b113c44ccb2a9db6230ac982b7d2a889a1` is pushed and its GitHub Actions run `37090609233` succeeded. `ghcr.io/kissow/marzban:latest` is published with index digest `sha256:c4bbe88b5b547bbdca3d6b8a4bf1e7c92aeb29ae50b36cd758b7c6eccae2edfc`. Server update and acceptance are still pending; this is not yet a stable production release. The paired Node image is recorded in the Node repository.
 
+> **Local development (2026-10-03, MR-20261003-EGRESS-UDP):** Per-Node UDP modes are implemented locally, not pushed/published or server-accepted. Legacy behavior remains the default; nonlegacy requires the paired Node capability. Both runtime repositories change; scripts and pinned Xray v26.3.27 do not. [Contract, DNS/routing limits and acceptance](docs/NODE_EGRESS_UDP.md). The historical release evidence below does not include this feature.
+
 <h1 align="center"/>Marzban</h1>
 
 <p align="center">

@@ -1,5 +1,13 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
+## MR-20261003-EGRESS-UDP：每 Node UDP 兼容（本地，未发布）
+
+主面板：原 Chakra 表单增加 UDP 处理；现有 egress GET/PUT 新增 `udp_mode`，additive 迁移 `7e8f9012ab34`，旧记录 legacy。Node：能力 `managed-outbounds-udp-v1`、配置通道字段和默认 DNS TCP/UDP 路由处理、原子校验。scripts：无变化。证书、端口、环境、数据卷和核心 v26.3.27 保留。不改 HWID 策略。
+
+54 项主面板/48 项 Node 本地测试、TS/Vite/原组件预览构建通过；4 个实际固定 Xray DNS TCP 测试和 8 组解析通过。桌面/手机 UI 截图受浏览器策略限制未验收；Linux 和实际供应商/手机应用尚待验收。**未推送、未发布新镜像**，发布 SHA/Actions/digest 均待填写；禁止借用下方历史证据宣称本功能发布。
+
+新模式须先发布并更新配对 Node 再更新主面板；不能给生产提供尚未发布镜像的更新命令。旧模式不下发新字段，新模式保存和连接都检查能力。默认 DNS TCP 不等于任意 UDP 转 TCP；原显式路由优先、自定义 DNS 上游被替换的限制见 [NODE_EGRESS_UDP.md](NODE_EGRESS_UDP.md)。
+
 ## MR-20261003-HWID-COMPAT：订阅兼容修复（镜像已发布，服务器验收待完成）
 
 根因：`reject_new` 对无 HWID 客户端返回 428，同时核心移除了共享账号；不仅不能导入，只修改 428 也不能恢复连接。修复同时覆盖真实订阅路由、初始配置和主核心/Node 增量账号同步。无 HWID 返回共享订阅，HWID 成功登记使用独立凭据，超额新 HWID 429，0 不限制登记。共享兼容路径可绕过限额，不保证物理设备数量；ACK 不是全客户端拦截证明。

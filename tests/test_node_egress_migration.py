@@ -13,6 +13,23 @@ MIGRATION = Path(__file__).resolve().parents[1] / "app/db/migrations/versions/3d
 
 
 class NodeEgressMigrationTests(unittest.TestCase):
+    def test_udp_mode_upgrade_and_rollback_preserve_settings(self):
+        engine = sa.create_engine("sqlite:///:memory:")
+        with engine.begin() as connection:
+            connection.exec_driver_sql("CREATE TABLE node_egress (node_id INTEGER PRIMARY KEY, server TEXT, encrypted_password TEXT)")
+            connection.exec_driver_sql("INSERT INTO node_egress VALUES (7, 'existing.example.net', 'encrypted-existing')")
+            path = MIGRATION.parent / "7e8f9012ab34_add_egress_udp_mode.py"
+            spec = importlib.util.spec_from_file_location("egress_udp_migration", path)
+            migration = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(migration)
+            migration.op = Operations(MigrationContext.configure(connection))
+            migration.upgrade()
+            self.assertEqual(connection.exec_driver_sql("SELECT udp_mode FROM node_egress").scalar(), "legacy")
+            connection.exec_driver_sql("UPDATE node_egress SET udp_mode='tcp_only'")
+            migration.downgrade()
+            self.assertEqual(connection.exec_driver_sql("SELECT server, encrypted_password FROM node_egress").one(),
+                             ("existing.example.net", "encrypted-existing"))
+
     def test_upgrade_and_downgrade_preserve_existing_data(self):
         engine = sa.create_engine("sqlite:///:memory:")
         with engine.begin() as connection:
