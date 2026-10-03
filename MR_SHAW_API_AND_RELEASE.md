@@ -1,5 +1,17 @@
 # Mr.shaw 扩展接口与更新规范
 
+## 2026-10-03 订阅兼容合同（本地测试中，尚未发布）
+
+沿用订阅 token 认证、原路径和参数，没有新增接口或迁移：
+
+| 方法和路径 | 输入与结果 | 副作用和限制 |
+| --- | --- | --- |
+| `GET /{XRAY_SUBSCRIPTION_PATH}/{token}` | 无 `X-HWID`：正常订阅为 `200`，使用原共享凭据，不再因 `reject_new` 返回 `428` | 不新增设备记录；共享账号保留，无法强制执行 HWID 限额 |
+| `GET /{XRAY_SUBSCRIPTION_PATH}/{token}/{client_type}` | sing-box/clash-meta/clash/outline/v2ray/v2ray-json 共用同一兼容逻辑 | User-Agent 自动识别路径同样兼容，原格式生成器未改 |
+| 上述两个订阅路由，携带 `X-HWID` | `reject_new` 登记成功返回独立凭据；同 HWID 重用；新 HWID 超额 `429`；无有效登记凭据 `403`；空/过长 HWID 仍为 `400` | 0 不限制数量；成功登记后经现有通道同步共享与独立账号到主核心和在线 Node |
+
+原鉴权、账号状态、到期与 token 错误行为保持不变；上表的 200 以原订阅有效为前提。无 HWID 或共享配置复制可以绕过 HWID 限额，因此不宣称全客户端或物理设备强制限制。`policy_enforcement` / `direct_connection_enforced` 原 ACK 字段不变，只表示合同/独立凭据支持，不证明所有客户端已被拦截。Node/scripts 运行时、UI、数据库 schema、证书、端口和 Xray `v26.3.27` 无变化；无需 Node 更新。回退使用更新前保存的镜像与配置；回退会重新带回旧版无 HWID 的订阅问题，不删除设备记录或数据卷。发布与服务器验收状态见发布清单。
+
 ## 2026-10-02 本地接口增补（未发布）
 
 `GET /api/node/{node_id}/health` 增加 Node 活动来源、scope、采样窗口和时间，以及策略数量、revision、同步时间、同步状态与 `direct_connection_enforced=true`。优先保留 Node 原生在线用户，旧 Node 才使用面板近期用量回退。

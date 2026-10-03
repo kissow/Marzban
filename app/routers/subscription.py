@@ -83,16 +83,15 @@ def register_request_device_if_present(
 
 def apply_device_credentials(db: Session, dbuser, user: UserResponse,
                              hwid: str | None) -> UserResponse:
-    """Use a per-HWID credential set when direct Node enforcement is enabled."""
+    """Use private credentials for HWID-aware clients, preserving legacy ones."""
     action = getattr(getattr(dbuser, "device_limit_action", None), "value",
                      getattr(dbuser, "device_limit_action", None))
     if action != "reject_new":
         return user
     if not hwid:
-        raise HTTPException(
-            status_code=428,
-            detail="This subscription requires a client X-HWID for device enforcement.",
-        )
+        # Traditional clients do not send X-HWID. Keep their shared credential
+        # path compatible; only HWID-aware requests can enforce device limits.
+        return user
     credentials = crud.get_user_device_credentials(db, dbuser, hwid)
     if not credentials:
         raise HTTPException(status_code=403, detail="Device registration is required before subscription retrieval.")

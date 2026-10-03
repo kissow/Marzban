@@ -413,11 +413,11 @@ class XRayConfig(dict):
                             continue
 
                         action = getattr(device_limit_action, "value", device_limit_action)
+                        # Keep the original shared account for clients that do
+                        # not send X-HWID. HWID-aware clients additionally get
+                        # private credentials below when reject_new is enabled.
+                        user_clients = [{"email": f"{user_id}.{username}", **settings}]
                         if action == "reject_new":
-                            # A rejecting user has no shared credential on the
-                            # core. Every registered HWID receives its own
-                            # protocol credential, so a direct Node connection
-                            # must present a device-specific secret.
                             devices = db.query(db_models.UserDevice).filter(
                                 db_models.UserDevice.user_id == user_id,
                                 db_models.UserDevice.revoked_at.is_(None),
@@ -426,37 +426,21 @@ class XRayConfig(dict):
                                 device_credentials = (device.credentials or {}).get(proxy_type_name, {})
                                 if not device_credentials:
                                     continue
-                                client = {
+                                user_clients.append({
                                     "email": f"{user_id}.{username}.device-{device.hwid_hash[:16]}",
                                     **settings,
                                     **device_credentials,
-                                }
-                                if client.get('flow') and (
-                                        inbound.get('network', 'tcp') not in ('tcp', 'raw', 'kcp')
-                                        or (inbound.get('network', 'tcp') in ('tcp', 'raw', 'kcp')
-                                            and inbound.get('tls') not in ('tls', 'reality'))
-                                        or inbound.get('header_type') == 'http'):
-                                    del client['flow']
-                                clients.append(client)
-                            continue
+                                })
 
-                        client = {"email": f"{user_id}.{username}", **settings}
-
-                        # XTLS currently only supports transmission methods of TCP and mKCP
-                        if client.get('flow') and (
-                                inbound.get('network', 'tcp') not in ('tcp', 'raw', 'kcp')
-                                or
-                                (
-                                    inbound.get('network', 'tcp') in ('tcp', 'raw', 'kcp')
-                                    and
-                                    inbound.get('tls') not in ('tls', 'reality')
-                                )
-                                or
-                                inbound.get('header_type') == 'http'
-                        ):
-                            del client['flow']
-
-                        clients.append(client)
+                        for client in user_clients:
+                            # XTLS currently only supports transmission methods
+                            # of TCP and mKCP with TLS/Reality.
+                            if client.get('flow') and (
+                                    inbound.get('network', 'tcp') not in ('tcp', 'raw', 'kcp')
+                                    or inbound.get('tls') not in ('tls', 'reality')
+                                    or inbound.get('header_type') == 'http'):
+                                del client['flow']
+                            clients.append(client)
 
         if DEBUG:
             with open('generated_config-debug.json', 'w') as f:

@@ -67,8 +67,7 @@ def add_user(dbuser: "DBUser"):
     action = getattr(getattr(dbuser, "device_limit_action", None), "value",
                      getattr(dbuser, "device_limit_action", None))
 
-    # Rejecting users are represented only by device-specific accounts. Do not
-    # briefly add the legacy shared account before reconciliation runs.
+    # Reconcile shared compatibility and device-specific accounts together.
     if action == "reject_new":
         sync_user_device_accounts(dbuser)
         return
@@ -173,7 +172,7 @@ def update_user(dbuser: "DBUser"):
 
 
 def sync_user_device_accounts(dbuser: "DBUser"):
-    """Make direct Node credentials match the user's registered HWIDs."""
+    """Sync shared compatibility accounts and registered HWID credentials."""
     user = UserResponse.model_validate(dbuser)
     base_email = f"{dbuser.id}.{dbuser.username}"
     action = getattr(getattr(dbuser, "device_limit_action", None), "value",
@@ -192,7 +191,17 @@ def sync_user_device_accounts(dbuser: "DBUser"):
             inbound = xray.config.inbounds_by_tag.get(inbound_tag, {})
             for api, _ in targets:
                 if action == "reject_new":
-                    _remove_user_from_inbound(api, inbound_tag, base_email)
+                    # Clients without X-HWID keep the original shared account
+                    # on the main core and every connected Node.
+                    settings = base_settings.dict(no_obj=True)
+                    account = proxy_type.account_model(email=base_email, **settings)
+                    if getattr(account, "flow", None) and (
+                        inbound.get("network", "tcp") not in ("tcp", "raw", "kcp")
+                        or inbound.get("tls") not in ("tls", "reality")
+                        or inbound.get("header_type") == "http"
+                    ):
+                        account.flow = XTLSFlows.NONE
+                    _alter_inbound_user(api, inbound_tag, account)
                     for device in devices:
                         fields = (device.credentials or {}).get(
                             getattr(proxy_type, "value", proxy_type), {})
