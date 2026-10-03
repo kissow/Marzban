@@ -2,6 +2,8 @@
 
 ## MR-20261003-DONATION-LINK：捐赠入口维护
 
+新主面板 latest 已发布：源 e72943b、Actions 37123809995 成功，两个架构的 digest/revision 核对通过；服务器点击验收待完成。Node/scripts 不需更新。
+
 原捐赠菜单保持原结构与主题，只将目标改为本 Fork README 的 Donation 锚点；中英文说明同步维护者提供的地址，并区分 Fork 与上游捐赠。不是新增支付、到账监控或二维码功能。API、数据库、Node/scripts、证书、端口、订阅与核心均无变化；[变更及发布证据](docs/DONATION_LINK_RELEASE.md)。
 
 ## MR-20261003-EGRESS-UDP（镜像已发布，服务器验收待完成）

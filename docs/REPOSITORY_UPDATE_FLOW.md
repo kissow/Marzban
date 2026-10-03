@@ -2,6 +2,8 @@
 
 ## MR-20261003-DONATION-LINK：捐赠入口（2026-10-03）
 
+已发布主面板镜像：源 e72943b、Actions 37123809995 首次成功，latest index `sha256:28ffe73996bd0078df894e0d56b0ec742087d678acebd8c8d34b646791f7eb6c`，amd64/arm64 OCI revision 核对通过。服务器点击验收待完成；此轮只更新主面板，Node/scripts 无变化。
+
 主面板只修改前端捐赠常量及中英文 README；补齐更新记录、接口说明和发布清单。Node/scripts 代码与文档合同均无变化，不需配对构建或服务器更新；所有 API、数据库、Node 通道、订阅、证书、端口、环境、数据卷及固定核心 v26.3.27 保持原样。常量变更须构建新主面板镜像，README 推送立即生效但不更新已部署前端。[测试/提交/构建/镜像/服务器记录](DONATION_LINK_RELEASE.md)。
 
 ## MR-20261003-EGRESS-UDP：每 Node UDP 兼容（镜像已发布，服务器验收待完成）

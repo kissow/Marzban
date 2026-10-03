@@ -2,6 +2,8 @@
 
 ## MR-20261003-DONATION-LINK：Fork 捐赠入口
 
+镜像发布状态：Actions 37123809995 成功，主面板 latest 的 amd64/arm64 revision 均为 e72943b6dad1abf6ccd58307cb1008bd6793d81f；digest 与服务器更新方式见发布记录。没有 API/协议变更或 Node 更新要求，服务器点击验收尚待确认。
+
 只更改前端 `DONATION_URL` 和中英文 README 的捐赠说明，不是 API 或收款服务。API、数据库、Node 通道、订阅、认证、证书、端口、环境文件、数据卷及 Xray v26.3.27 均无变化；Node/scripts 无需配对构建或服务器更新。[发布记录](docs/DONATION_LINK_RELEASE.md)。
 
 ## MR-20261003-EGRESS-UDP：住宅出口合同扩展（镜像已发布，服务器验收待完成）

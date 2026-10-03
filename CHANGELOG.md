@@ -6,6 +6,7 @@
 - 明确这些地址支持 Mr.shaw 社区 Fork，保留上游署名、许可证和原项目捐赠说明链接；未修改 Header 结构或 Chakra 主题。
 - API、数据库、订阅、Node 通道、证书、端口、环境、用户数据及 Xray v26.3.27 无变化；Node/scripts 无变化，无需更新。主面板常量变更需要新镜像。
 - 测试、提交、Actions、镜像和服务器状态分别登记于 [发布记录](docs/DONATION_LINK_RELEASE.md)；不沿用前一功能的镜像证据。
+- 发布完成：源 e72943b、Actions 37123809995 首次成功，latest index `sha256:28ffe73996bd0078df894e0d56b0ec742087d678acebd8c8d34b646791f7eb6c`，amd64/arm64 revision 均核对通过；服务器点击验收待完成。
 
 ## MR-20261003-EGRESS-UDP：每个 Node 独立 UDP 处理（镜像已发布，服务器验收待完成）
 

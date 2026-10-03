@@ -16,6 +16,20 @@
 - 主面板完整后端 unittest 54 项、TypeScript noEmit、Vite 生产构建：通过；保留既有依赖弃用提示和 Vite 大包警告，无错误。
 - 构建产物捐赠目标检查：生产 JS 包包含 Fork 捐赠地址且不含旧菜单目标；中英文 README 两组地址一致。
 - 源提交：`e72943b6dad1abf6ccd58307cb1008bd6793d81f`，已推送 `kissow/Marzban` 的 master，并通过 GitHub API 核对远程提交。
-- Actions：[37123809995](https://github.com/kissow/Marzban/actions/runs/37123809995)，workflow `build.yml` 自动触发，登记时正在运行；不得标记为构建成功或镜像已发布。
-- GHCR latest index/amd64/arm64 digest 与 OCI revision：尚未核对本次新镜像；旧功能证据不能代替本次构建。后续文档提交使用 `[skip ci]`，不改变本次镜像对应的源 SHA。
+- Actions：[37123809995](https://github.com/kissow/Marzban/actions/runs/37123809995)，workflow `build.yml`，首次运行成功，后端/前端检查、固定核心闸门、多架构构建和 GHCR 发布全部通过。
+- GHCR `ghcr.io/kissow/marzban:latest` index：`sha256:28ffe73996bd0078df894e0d56b0ec742087d678acebd8c8d34b646791f7eb6c`。
+- Linux amd64：`sha256:c9eae7386c4155fc3c2de9cee8032c5360a2fe858bd8fcf2dbd5b7826bca6459`；Linux arm64：`sha256:bcc8d796faacd77d4dba3f5784862f812e72de6db7d0e566a2ded933def8695d`。
+- 2026-10-03 通过匿名 GHCR manifest/config 读取核对两个架构，OCI revision 均为 `e72943b6dad1abf6ccd58307cb1008bd6793d81f`；新镜像确实对应本次源修改。后续文档提交使用 `[skip ci]`，不改变镜像源 SHA。
+- 构建仅出现 runner 的 Node.js 20 弃用/强制运行 Node.js 24 与 ubuntu-latest 未来迁移提示，不是失败；未修改产品依赖或核心。
 - 服务器点击验收：待维护者更新后确认；这不是已通过的服务器验收。
+
+## 已切换 Fork 的服务器更新
+
+完成现有数据备份后，在主面板服务器的 root SSH 运行：
+
+```bash
+marzban update
+marzban status
+```
+
+更新的是主面板，不需要重复 adopt/install，不需要更新 Node。已核对仓库更新脚本会先备份，再 pull 与 up 主面板服务；保留已有 .env/数据卷/证书/端口。更新后刷新或强制刷新面板，点击捐赠，目标应为 `https://github.com/kissow/Marzban#donation`。这里只提供命令，未远程执行生产服务器更新。

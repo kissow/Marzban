@@ -362,6 +362,8 @@ Marzban 配备了一个集成的 Telegram bot，可以处理服务器管理、�
 
 # 捐赠
 
+2026-10-03 捐赠入口对应的新主面板镜像已经发布；Actions 37123809995 和两种架构的 OCI revision 均核对通过。已切换 Fork 的主面板使用 `marzban update`，Node 不需更新；[发布证据与更新说明](docs/DONATION_LINK_RELEASE.md)。服务器更新后的点击验收待维护者确认。
+
 以下地址用于支持 **Mr.shaw 社区 Fork** 的开发与维护。本 Fork 基于 [Gozargah/Marzban](https://github.com/Gozargah/Marzban)，感谢原作者和贡献者。如果希望支持原项目，请访问[上游捐赠说明](https://github.com/Gozargah/Marzban#donation)。
 
 - USDT•TRON (TRC20)：`TXWN1uwo9X6mXizcb4hJPTquEmvWWgMftU`
