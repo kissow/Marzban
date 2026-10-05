@@ -288,7 +288,7 @@ export const UsageFilter: FC<UsageFilterProps> = ({
             <TabPanel className="datepicker-panel">
               <VStack>
                 <ReactDatePicker
-                  locale={i18n.language.toLocaleLowerCase()}
+                  locale={(i18n.resolvedLanguage || i18n.language).toLowerCase()}
                   selected={startDate}
                   onChange={onDateChange}
                   startDate={startDate}

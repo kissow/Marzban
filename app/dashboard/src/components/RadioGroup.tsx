@@ -279,7 +279,7 @@ const RadioCard: FC<
             p={0}
             onClick={toggleAccordion}
           >
-            <IconButton size="sm" aria-label="inbound settings">
+            <IconButton size="sm" aria-label={t("ui.inboundSettings")}>
               <SettingsIcon />
             </IconButton>
           </AccordionButton>

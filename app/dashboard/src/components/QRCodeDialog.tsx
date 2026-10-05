@@ -128,7 +128,7 @@ export const QRCodeDialog: FC = () => {
                     position="absolute"
                     display="flex !important"
                     _before={{ content: '""' }}
-                    aria-label="next"
+                    aria-label={t("ui.next")}
                     mr="-4"
                   >
                     <NextIcon />
@@ -140,7 +140,7 @@ export const QRCodeDialog: FC = () => {
                     position="absolute"
                     display="flex !important"
                     _before={{ content: '""' }}
-                    aria-label="prev"
+                    aria-label={t("ui.previous")}
                     ml="-4"
                   >
                     <PrevIcon />

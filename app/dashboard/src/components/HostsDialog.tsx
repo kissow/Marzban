@@ -52,6 +52,7 @@ import {
 } from "constants/Proxies";
 import { useHosts } from "contexts/HostsContext";
 import { motion } from "framer-motion";
+import { t as translate } from "i18next";
 import { FC, useEffect, useState } from "react";
 import {
   Controller,
@@ -128,8 +129,8 @@ const hostsSchema = z.record(
   z.string().min(1),
   z.array(
     z.object({
-      remark: z.string().min(1, "Remark is required"),
-      address: z.string().min(1, "Address is required"),
+      remark: z.string().refine(value => value.length > 0, () => ({ message: translate("hostsDialog.remarkRequired") })),
+      address: z.string().refine(value => value.length > 0, () => ({ message: translate("hostsDialog.addressRequired") })),
       port: z
         .string()
         .or(z.number())
@@ -250,6 +251,8 @@ const AccordionInbound: FC<AccordionInboundType> = ({
           fontWeight="medium"
           fontSize="sm"
           flex="1"
+          minW={0}
+          overflowWrap="anywhere"
           textAlign="left"
           color="gray.700"
           _dark={{ color: "gray.300" }}
@@ -301,7 +304,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                           {...form.register(hostKey + "." + index + ".remark")}
                           size="sm"
                           borderRadius="4px"
-                          placeholder="Remark"
+                          placeholder={t("ui.remark")}
                         />
                         <InputRightElement>
                           <Popover isLazy placement="right">
@@ -311,7 +314,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                               </Box>
                             </PopoverTrigger>
                             <Portal>
-                              <PopoverContent>
+                              <PopoverContent maxW="calc(100vw - 24px)" maxH="calc(100dvh - 24px)" overflowY="auto" overflowWrap="anywhere">
                                 <PopoverArrow />
                                 <PopoverCloseButton />
                                 <PopoverBody>
@@ -424,7 +427,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                       <Input
                         size="sm"
                         borderRadius="4px"
-                        placeholder="Address (e.g. example.com)"
+                        placeholder={t("ui.example", { label: t("ui.address"), example: "example.com" })}
                         {...form.register(hostKey + "." + index + ".address")}
                       />
                       <InputRightElement>
@@ -435,7 +438,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                             </Box>
                           </PopoverTrigger>
                           <Portal>
-                            <PopoverContent>
+                            <PopoverContent maxW="calc(100vw - 24px)" maxH="calc(100dvh - 24px)" overflowY="auto" overflowWrap="anywhere">
                               <PopoverArrow />
                               <PopoverCloseButton />
                               <PopoverBody>
@@ -539,9 +542,11 @@ const AccordionInbound: FC<AccordionInboundType> = ({
 
                   <Accordion w="full" allowToggle>
                     <AccordionItem border="0">
-                      <div style={{ display: "flex", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
                         <AccordionButton
                           display="flex"
+                          flex="1"
+                          minW={0}
                           px={0}
                           py={1}
                           borderRadius={3}
@@ -549,6 +554,8 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                         >
                           <Text
                             flex="3"
+                            minW={0}
+                            overflowWrap="anywhere"
                             align="start"
                             fontSize="xs"
                             color="gray.600"
@@ -579,9 +586,9 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                                 );
                               }}
                             />
-                            <Tooltip label="Delete" placement="top">
+                            <Tooltip label={t("delete")} placement="top">
                               <IconButton
-                                aria-label="Delete"
+                                aria-label={t("delete")}
                                 size="sm"
                                 colorScheme="red"
                                 variant="ghost"
@@ -592,9 +599,9 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                             </Tooltip>
                           </Container>
                         </AccordionButton>
-                        <Tooltip label="Duplicate" placement="top">
+                        <Tooltip label={t("ui.duplicate")} placement="top">
                           <IconButton
-                            aria-label="Duplicate"
+                            aria-label={t("ui.duplicate")}
                             size="sm"
                             colorScheme="white"
                             variant="ghost"
@@ -604,9 +611,9 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                           </IconButton>
                         </Tooltip>
                         {index < hosts.length - 1 && (
-                          <Tooltip label="Move Down" placement="top">
+                          <Tooltip label={t("ui.moveDown")} placement="top">
                             <IconButton
-                              aria-label="DownIcon"
+                              aria-label={t("ui.moveDown")}
                               size="sm"
                               colorScheme="white"
                               variant="ghost"
@@ -617,9 +624,9 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                           </Tooltip>
                         )}
                         {index > 0 && (
-                          <Tooltip label="Move Up" placement="top">
+                          <Tooltip label={t("ui.moveUp")} placement="top">
                             <IconButton
-                              aria-label="UpIcon"
+                              aria-label={t("ui.moveUp")}
                               size="sm"
                               colorScheme="white"
                               variant="ghost"
@@ -653,7 +660,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                                   <InfoIcon />
                                 </PopoverTrigger>
                                 <Portal>
-                                  <PopoverContent p={2}>
+                                  <PopoverContent p={2} maxW="calc(100vw - 24px)" maxH="calc(100dvh - 24px)" overflowY="auto" overflowWrap="anywhere">
                                     <PopoverArrow />
                                     <PopoverCloseButton />
                                     <Text fontSize="xs" pr={5}>
@@ -693,7 +700,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                                   <InfoIcon />
                                 </PopoverTrigger>
                                 <Portal>
-                                  <PopoverContent p={2}>
+                                  <PopoverContent p={2} maxW="calc(100vw - 24px)" maxH="calc(100dvh - 24px)" overflowY="auto" overflowWrap="anywhere">
                                     <PopoverArrow />
                                     <PopoverCloseButton />
                                     <Text fontSize="xs" pr={5}>
@@ -722,7 +729,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                             <Input
                               size="sm"
                               borderRadius="4px"
-                              placeholder="SNI (e.g. example.com)"
+                              placeholder={t("ui.example", { label: "SNI", example: "example.com" })}
                               {...form.register(hostKey + "." + index + ".sni")}
                             />
                             {accordionErrors && accordionErrors[index]?.sni && (
@@ -753,7 +760,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                                   <InfoIcon />
                                 </PopoverTrigger>
                                 <Portal>
-                                  <PopoverContent p={2}>
+                                  <PopoverContent p={2} maxW="calc(100vw - 24px)" maxH="calc(100dvh - 24px)" overflowY="auto" overflowWrap="anywhere">
                                     <PopoverArrow />
                                     <PopoverCloseButton />
                                     <Text fontSize="xs" pr={5}>
@@ -782,7 +789,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                             <Input
                               size="sm"
                               borderRadius="4px"
-                              placeholder="Host (e.g. example.com)"
+                              placeholder={t("ui.example", { label: t("hostsDialog.host"), example: "example.com" })}
                               {...form.register(
                                 hostKey + "." + index + ".host"
                               )}
@@ -817,7 +824,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                                   <InfoIcon />
                                 </PopoverTrigger>
                                 <Portal>
-                                  <PopoverContent p={2}>
+                                  <PopoverContent p={2} maxW="calc(100vw - 24px)" maxH="calc(100dvh - 24px)" overflowY="auto" overflowWrap="anywhere">
                                     <PopoverArrow />
                                     <PopoverCloseButton />
                                     <Text fontSize="xs" pr={5}>
@@ -830,7 +837,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                             <Input
                               size="sm"
                               borderRadius="4px"
-                              placeholder="path (e.g. /vless)"
+                              placeholder={t("ui.example", { label: t("hostsDialog.path"), example: "/vless" })}
                               {...form.register(
                                 hostKey + "." + index + ".path"
                               )}
@@ -859,7 +866,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                                   <InfoIcon />
                                 </PopoverTrigger>
                                 <Portal>
-                                  <PopoverContent p={2}>
+                                  <PopoverContent p={2} maxW="calc(100vw - 24px)" maxH="calc(100dvh - 24px)" overflowY="auto" overflowWrap="anywhere">
                                     <PopoverArrow />
                                     <PopoverCloseButton />
                                     <Text fontSize="xs" pr={5}>
@@ -962,7 +969,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                                   <InfoIcon />
                                 </PopoverTrigger>
                                 <Portal>
-                                  <PopoverContent p={2}>
+                                  <PopoverContent p={2} maxW="calc(100vw - 24px)" maxH="calc(100dvh - 24px)" overflowY="auto" overflowWrap="anywhere">
                                     <PopoverArrow />
                                     <PopoverCloseButton />
                                     <Text fontSize="xs" pr={5}>
@@ -987,7 +994,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                             <Input
                               size="sm"
                               borderRadius="4px"
-                              placeholder="Fragment settings by pattern"
+                              placeholder={t("hostsDialog.fragment.info")}
                               {...form.register(
                                 hostKey + "." + index + ".fragment_setting"
                               )}
@@ -1026,7 +1033,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                                   <InfoIcon />
                                 </PopoverTrigger>
                                 <Portal>
-                                  <PopoverContent p={2}>
+                                  <PopoverContent p={2} maxW="calc(100vw - 24px)" maxH="calc(100dvh - 24px)" overflowY="auto" overflowWrap="anywhere">
                                     <PopoverArrow />
                                     <PopoverCloseButton />
                                     <Text fontSize="xs" pr={5}>
@@ -1051,7 +1058,7 @@ const AccordionInbound: FC<AccordionInboundType> = ({
                             <Input
                               size="sm"
                               borderRadius="4px"
-                              placeholder="Noise settings by pattern"
+                              placeholder={t("hostsDialog.noise.info")}
                               {...form.register(
                                 hostKey + "." + index + ".noise_setting"
                               )}
@@ -1270,14 +1277,14 @@ export const HostsDialog: FC = () => {
   return (
     <Modal isOpen={isEditingHosts} onClose={onClose}>
       <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(10px)" />
-      <ModalContent mx="3" w="fit-content" maxW="3xl">
+      <ModalContent mx="3" w="440px" maxW="calc(100vw - 24px)">
         <ModalHeader pt={6}>
           <Icon color="primary">
             <ModalIcon color="white" />
           </Icon>
         </ModalHeader>
         <ModalCloseButton mt={3} />
-        <ModalBody w="440px" pb={3} pt={3}>
+        <ModalBody w="full" minW={0} pb={3} pt={3}>
           <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)}>
               <Text mb={3} opacity={0.8} fontSize="sm">
@@ -1307,7 +1314,7 @@ export const HostsDialog: FC = () => {
                     </VStack>
                   </Accordion>
                 ) : (
-                  "No inbound found. Please check your Xray config file."
+                  t("hostsDialog.noInbound")
                 ))}
 
               <HStack justifyContent="flex-end" py={2}>

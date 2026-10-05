@@ -246,7 +246,7 @@ const CoreSettingModalContent: FC = () => {
               {isLoading && <CircularProgress isIndeterminate size="15px" />}
             </FormLabel>
             <HStack gap={0}>
-              <Tooltip label="Xray Version" placement="top">
+              <Tooltip label={t("core.version")} placement="top">
                 <Badge height="100%" textTransform="lowercase">
                   {version && `v${version}`}
                 </Badge>
@@ -263,7 +263,7 @@ const CoreSettingModalContent: FC = () => {
             />
             <IconButton
               size="xs"
-              aria-label="full screen"
+              aria-label={t("ui.fullScreen")}
               variant="ghost"
               position="absolute"
               top="2"

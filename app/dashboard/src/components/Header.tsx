@@ -203,7 +203,7 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
             <IconButton
               size="sm"
               variant="outline"
-              aria-label="core settings"
+              aria-label={t("core.title")}
               onClick={() => {
                 useDashboard.setState({ isEditingCore: true });
               }}
@@ -217,7 +217,7 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
           <IconButton
             size="sm"
             variant="outline"
-            aria-label="switch theme"
+            aria-label={t("ui.switchTheme")}
             onClick={() => {
               updateThemeColor(colorMode == "dark" ? "light" : "dark");
               toggleColorMode();
@@ -242,7 +242,7 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
               data-color-scheme={`no-preference: ${gBtnColor}; light: ${gBtnColor}; dark: ${gBtnColor};`}
               data-size="large"
               data-show-count="true"
-              aria-label="Star Marzban on GitHub"
+              aria-label={t("ui.githubStar")}
             >
               Star
             </GitHubButton>
