@@ -245,7 +245,7 @@ const NodeAccordion: FC<AccordionInboundType> = ({ node, isOpen }) => {
                 colorScheme="red"
                 variant="ghost"
                 size="sm"
-                aria-label="delete node"
+                aria-label={t("deleteNode.title")}
                 onClick={handleDeleteNode}
               >
                 <DeleteIcon />

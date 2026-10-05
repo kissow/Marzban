@@ -1,3 +1,5 @@
+> **MR-DASHBOARD-I18N-MOBILE（本地，未发布）：** 完善 en/fa/zh/ru 共用文案、在线/到期相对时间和日历语言。原设置入站桌面保持 440px，手机按视口收窄，长标题和帮助文字可换行。API/数据库/Node/scripts/Xray 不变。语言回归 34/34、主控回归 95/95、TypeScript 和生产/原组件预览构建通过。浏览器安全策略校验无法授权访问，真实手机视觉验收待完成。无 push/Actions/新镜像。[范围和验收闸门](docs/DASHBOARD_I18N_MOBILE.md)。
+
 > **节点连接恢复（镜像已发布，服务器验收待完成）：** 增加节点生命周期互斥、隔离健康恢复、阶段性失败原因、TLS 握手超时及安全重试。两轮本地全量 95/95 与 Linux CI 通过；PR #10 合入 `122632c8`，Actions `37340574125` 成功，`ghcr.io/kissow/marzban:latest` 双架构 OCI revision 已核对。UI/API/数据库/Node 线协议/Xray 不变，已配对 Node 和 scripts 无需本轮更新。[新镜像摘要、范围、接口含义及服务器验收闸门](docs/NODE_RECOVERY_RELEASE.md)。本轮未执行服务器部署与真实网络验收。
 
 > **节点初连/调度器维护（2026-10-03，镜像已发布，服务器验收待完成）：** 非 legacy 出口先建立已有认证会话，再检查健康并启动；保留具体错误原因。APScheduler 固定到 3.11.3，消除 pkg_resources 弃用依赖。本地/Linux CI 69/69、前端检查通过；源 `78e7b8e`、Actions `37135175798` 成功，双架构 latest 和 OCI revision 已核对。API/数据库/UI/证书/端口/HWID/Xray 不变，已配对 Node 与 scripts 本轮不需更新。[兼容、测试和发布证据](docs/NODE_CONNECTION_RELEASE.md)。下方镜像记录属于此前发布。

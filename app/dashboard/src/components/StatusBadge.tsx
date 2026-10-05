@@ -21,7 +21,7 @@ export const StatusBadge: FC<UserStatusProps> = ({
   extraText,
 }) => {
   const { t } = useTranslation();
-  const dateInfo = relativeExpiryDate(expiryDate);
+  const dateInfo = relativeExpiryDate(expiryDate, t);
   const Icon = statusColors[userStatus].icon;
   return (
     <>

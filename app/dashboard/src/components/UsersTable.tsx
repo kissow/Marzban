@@ -287,10 +287,10 @@ export const UsersTable: FC<UsersTableProps> = (props) => {
                     w="100%"
                   >
                     {t("usersTable.status")}
-                    {filters.status ? ": " + filters.status : ""}
+                    {filters.status ? ": " + t(`status.${filters.status}`) : ""}
                   </Text>
                   <Select
-                    value={filters.sort}
+                    value={filters.status || ""}
                     fontSize="xs"
                     fontWeight="extrabold"
                     textTransform="uppercase"
@@ -306,11 +306,11 @@ export const UsersTable: FC<UsersTableProps> = (props) => {
                     onChange={handleStatusFilter}
                   >
                     <option></option>
-                    <option>active</option>
-                    <option>on_hold</option>
-                    <option>disabled</option>
-                    <option>limited</option>
-                    <option>expired</option>
+                    <option value="active">{t("status.active")}</option>
+                    <option value="on_hold">{t("status.on_hold")}</option>
+                    <option value="disabled">{t("status.disabled")}</option>
+                    <option value="limited">{t("status.limited")}</option>
+                    <option value="expired">{t("status.expired")}</option>
                   </Select>
                 </HStack>
               </Th>
@@ -453,7 +453,7 @@ export const UsersTable: FC<UsersTableProps> = (props) => {
                                   >
                                     <IconButton
                                       p="0 !important"
-                                      aria-label="Edit user"
+                                      aria-label={t("ui.editUser")}
                                       bg="transparent"
                                       _dark={{
                                         _hover: {
@@ -524,12 +524,12 @@ export const UsersTable: FC<UsersTableProps> = (props) => {
                   zIndex={1}
                 >
                   {t("usersTable.status")}
-                  {filters.status ? ": " + filters.status : ""}
+                  {filters.status ? ": " + t(`status.${filters.status}`) : ""}
                 </Text>
                 <Text>/</Text>
                 <Sort sort={filters.sort} column="expire" />
                 <HStack onClick={handleSort.bind(null, "expire")}>
-                  <Text>Sort by expire</Text>
+                  <Text>{t("usersTable.sortByExpire")}</Text>
                 </HStack>
                 <Select
                   fontSize="xs"
@@ -546,15 +546,15 @@ export const UsersTable: FC<UsersTableProps> = (props) => {
                   _focusVisible={{
                     border: "0 !important",
                   }}
-                  value={filters.sort}
+                  value={filters.status || ""}
                   onChange={handleStatusFilter}
                 >
                   <option></option>
-                  <option>active</option>
-                  <option>on_hold</option>
-                  <option>disabled</option>
-                  <option>limited</option>
-                  <option>expired</option>
+                  <option value="active">{t("status.active")}</option>
+                  <option value="on_hold">{t("status.on_hold")}</option>
+                  <option value="disabled">{t("status.disabled")}</option>
+                  <option value="limited">{t("status.limited")}</option>
+                  <option value="expired">{t("status.expired")}</option>
                 </Select>
               </HStack>
             </Th>
@@ -678,7 +678,7 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
           >
             <IconButton
               p="0 !important"
-              aria-label="copy subscription link"
+              aria-label={t("usersTable.copyLink")}
               bg="transparent"
               _dark={{
                 _hover: {
@@ -716,7 +716,7 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
           >
             <IconButton
               p="0 !important"
-              aria-label="copy configs"
+              aria-label={t("usersTable.copyConfigs")}
               bg="transparent"
               _dark={{
                 _hover: {
@@ -733,10 +733,10 @@ const ActionButtons: FC<ActionButtonsProps> = ({ user }) => {
           </Tooltip>
         </div>
       </CopyToClipboard>
-      <Tooltip label="QR Code" placement="top">
+      <Tooltip label={t("ui.qrCode")} placement="top">
         <IconButton
           p="0 !important"
-          aria-label="qr code"
+          aria-label={t("ui.qrCode")}
           bg="transparent"
           _dark={{
             _hover: {

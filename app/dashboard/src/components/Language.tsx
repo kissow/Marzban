@@ -22,7 +22,7 @@ const LangIcon = chakra(LanguageIcon, {
 });
 
 export const Language: FC<HeaderProps> = ({ actions }) => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   var changeLanguage = (lang: string) => {
     i18n.changeLanguage(lang);
@@ -34,6 +34,7 @@ export const Language: FC<HeaderProps> = ({ actions }) => {
         as={IconButton}
         size="sm"
         variant="outline"
+        aria-label={t("language.select")}
         icon={<LangIcon />}
         position="relative"
       />

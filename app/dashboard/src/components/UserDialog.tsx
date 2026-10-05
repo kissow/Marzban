@@ -480,7 +480,7 @@ export const UserDialog: FC<UserDialogProps> = () => {
                                     return (
                                       <Tooltip
                                         placement="top"
-                                        label={"status: " + t(`status.${field.value}`)}
+                                        label={t("usersTable.status") + ": " + t(`status.${field.value}`)}
                                         textTransform="capitalize"
                                       >
                                         <Box>
@@ -745,12 +745,12 @@ export const UserDialog: FC<UserDialogProps> = () => {
                                 ).toDate();
                               }
                               const { status, time } = relativeExpiryDate(
-                                field.value
+                                field.value, t
                               );
                               return (
                                 <>
                                   <ReactDatePicker
-                                    locale={i18n.language.toLocaleLowerCase()}
+                                    locale={(i18n.resolvedLanguage || i18n.language).toLowerCase()}
                                     dateFormat={t("dateFormat")}
                                     minDate={new Date()}
                                     selected={
@@ -929,7 +929,7 @@ export const UserDialog: FC<UserDialogProps> = () => {
                     <>
                       <Tooltip label={t("delete")} placement="top">
                         <IconButton
-                          aria-label="Delete"
+                          aria-label={t("delete")}
                           size="sm"
                           onClick={() => {
                             onDeletingUser(editingUser);
@@ -941,7 +941,7 @@ export const UserDialog: FC<UserDialogProps> = () => {
                       </Tooltip>
                       <Tooltip label={t("userDialog.usage")} placement="top">
                         <IconButton
-                          aria-label="usage"
+                          aria-label={t("userDialog.usage")}
                           size="sm"
                           onClick={handleUsageToggle}
                         >

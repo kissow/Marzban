@@ -4,6 +4,9 @@ import fa from "date-fns/locale/fa-IR";
 import ru from "date-fns/locale/ru";
 import zh from "date-fns/locale/zh-CN";
 import dayjs from "dayjs";
+import "dayjs/locale/fa";
+import "dayjs/locale/ru";
+import "dayjs/locale/zh-cn";
 import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import HttpApi from "i18next-http-backend";
@@ -15,6 +18,12 @@ declare module "i18next" {
         returnNull: false;
     }
 }
+
+const updateDateLocale = (lng: string) => {
+    const language = lng.toLowerCase().split("-")[0];
+    dayjs.locale(language === "zh" ? "zh-cn" : language);
+    document.documentElement.lang = lng;
+};
 
 i18n
     .use(LanguageDetector)
@@ -43,16 +52,17 @@ i18n
             },
         },
         function (err, t) {
-            dayjs.locale(i18n.language);
+            updateDateLocale(i18n.resolvedLanguage || i18n.language || "en");
         }
     );
 
 i18n.on("languageChanged", (lng) => {
-    dayjs.locale(lng);
+    updateDateLocale(lng);
 });
 
 // DataPicker
 registerLocale("zh-cn", zh);
+registerLocale("zh", zh);
 registerLocale("ru", ru);
 registerLocale("fa", fa);
 

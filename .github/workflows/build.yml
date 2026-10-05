@@ -37,6 +37,7 @@ jobs:
         env:
           VITE_BASE_API: /api/
         run: |
+          npm run test:locales
           npm exec tsc -- --noEmit
           npm exec vite -- build --outDir build --assetsDir statics
           cp build/index.html build/404.html

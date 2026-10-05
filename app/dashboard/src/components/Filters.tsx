@@ -97,7 +97,7 @@ export const Filters: FC<FilterProps> = ({ ...props }) => {
             {filters.search && filters.search.length > 0 && (
               <IconButton
                 onClick={clear}
-                aria-label="clear"
+                aria-label={t("ui.clearSearch")}
                 size="xs"
                 variant="ghost"
               >
@@ -110,7 +110,7 @@ export const Filters: FC<FilterProps> = ({ ...props }) => {
       <GridItem colSpan={2} order={{ base: 1, md: 2 }}>
         <HStack justifyContent="flex-end" alignItems="center" h="full">
           <IconButton
-            aria-label="refresh users"
+            aria-label={t("ui.refreshUsers")}
             disabled={loading}
             onClick={refetchUsers}
             size="sm"
