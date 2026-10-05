@@ -2,6 +2,7 @@ import importlib.util
 import sys
 import types
 import unittest
+import threading
 from contextlib import ExitStack
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -117,6 +118,8 @@ class NodeConnectionOrderTests(unittest.TestCase):
         self.addCleanup(self.stack.close)
         operations._connecting_nodes.clear()
         self.addCleanup(operations._connecting_nodes.clear)
+        operations._node_retry_after.clear()
+        self.addCleanup(operations._node_retry_after.clear)
         self.events = []
         self.node = Mock(connected=False)
         self.node.connect.side_effect = self.connect
@@ -129,7 +132,8 @@ class NodeConnectionOrderTests(unittest.TestCase):
         self.config = {'outbounds': [{'tag': 'DIRECT', 'protocol': 'freedom'}]}
         self.stack.enter_context(patch.object(operations, 'GetDB'))
         crud_mock = self.stack.enter_context(patch.object(operations, 'crud'))
-        crud_mock.get_node_by_id.return_value = types.SimpleNamespace(id=1, name='test-node')
+        self.crud = crud_mock
+        crud_mock.get_node_by_id.return_value = types.SimpleNamespace(id=1, name='test-node', status='error')
         self.stack.enter_context(patch.object(operations, 'read_egress', side_effect=lambda *a: self.profile))
         real_egress = load('test_connection_egress', 'app/xray/node_egress.py')
         self.stack.enter_context(patch.object(operations, 'for_node', real_egress.for_node))
@@ -210,14 +214,14 @@ class NodeConnectionOrderTests(unittest.TestCase):
         self.run_connection()
         self.node.get_health.assert_not_called()
         self.node.start.assert_not_called()
-        self.status.assert_called_with(1, node_models.NodeStatus.error, message='test authentication failed')
-        self.assertIn('test authentication failed', self.logger.info.call_args.args[0])
+        self.status.assert_called_with(1, node_models.NodeStatus.error, message='Control session / TLS: test authentication failed')
+        self.assertIn('test authentication failed', self.logger.warning.call_args.args[-1])
 
     def test_health_failure_preserves_reason_and_allows_retry(self):
         self.node.get_health.side_effect = TimeoutError('test health timeout')
         self.run_connection()
         self.node.start.assert_not_called()
-        self.status.assert_called_with(1, node_models.NodeStatus.error, message='test health timeout')
+        self.status.assert_called_with(1, node_models.NodeStatus.error, message='Prepare node configuration / health: test health timeout')
         self.node.get_health.side_effect = self.health
         self.run_connection()
         self.node.start.assert_called_once()
@@ -226,6 +230,155 @@ class NodeConnectionOrderTests(unittest.TestCase):
         self.node.start.side_effect = ConnectionError("Failed to connect to node's API")
         self.run_connection()
         self.assertEqual(self.events, ['connect', 'health'])
-        self.status.assert_called_with(1, node_models.NodeStatus.error, message="Failed to connect to node's API")
+        self.status.assert_called_with(1, node_models.NodeStatus.error, message="Start Xray / API readiness: Failed to connect to node's API")
         self.sync.assert_not_called()
         self.accounts.assert_not_called()
+
+    def test_expired_session_reuses_transport_without_disconnect(self):
+        self.runtime.nodes[1] = self.node
+        self.run_connection()
+        self.node.disconnect.assert_not_called()
+        self.runtime.operations.add_node.assert_not_called()
+        self.assertEqual(self.events, ['connect', 'health', 'start'])
+
+    def test_restart_failure_does_not_disconnect_remote_core(self):
+        self.node.connected = True
+        self.runtime.nodes[1] = self.node
+        self.node.restart.side_effect = TimeoutError('API port timed out')
+        operations.restart_node(1, self.config)
+        self.node.disconnect.assert_not_called()
+        self.assertIn('Restart Xray / API readiness: API port timed out', self.status.call_args.kwargs['message'])
+        self.assertNotIn(1, operations._connecting_nodes)
+
+    def test_automatic_retry_waits_but_manual_reconnect_bypasses_delay(self):
+        self.node.connect.side_effect = TimeoutError('offline')
+        self.run_connection()
+        self.node.connect.reset_mock()
+        self.node.connect.side_effect = self.connect
+        operations.connect_node(1, automatic=True)
+        self.node.connect.assert_not_called()
+        self.run_connection()
+        self.node.start.assert_called_once()
+        self.assertNotIn(1, operations._node_retry_after)
+
+    def test_failed_transport_construction_records_reason_and_releases_lock(self):
+        self.runtime.operations.add_node.side_effect = ValueError('bad certificate')
+        self.run_connection()
+        self.assertEqual(self.status.call_args.kwargs['message'], 'Create node transport: bad certificate')
+        self.runtime.operations.add_node.side_effect = None
+        self.run_connection()
+        self.node.start.assert_called_once()
+
+    def test_failed_db_lookup_records_reason_and_releases_lock(self):
+        self.crud.get_node_by_id.side_effect = RuntimeError('DB unavailable')
+        self.run_connection()
+        self.assertEqual(self.status.call_args.kwargs['message'], 'Read node configuration: DB unavailable')
+        self.crud.get_node_by_id.side_effect = None
+        self.run_connection()
+        self.node.start.assert_called_once()
+
+    def test_disabled_node_is_not_started(self):
+        self.crud.get_node_by_id.return_value.status = 'disabled'
+        self.run_connection()
+        self.node.start.assert_not_called()
+
+    def test_rest_health_timeout_returns_restart_and_records_reason(self):
+        self.runtime.nodes[1] = self.node
+        self.node.connected = True
+        type(self.node).started = property(lambda _: (_ for _ in ()).throw(TimeoutError('REST read timeout')))
+        self.addCleanup(delattr, type(self.node), 'started')
+        self.assertEqual(operations.check_node_health(1), 'restart')
+        self.assertEqual(self.status.call_args.kwargs['message'], 'Health check: REST read timeout')
+
+    def test_health_and_automatic_recovery_skip_failed_node_cooldown(self):
+        operations._node_retry_after[1] = operations.monotonic() + 30
+        self.assertIsNone(operations.check_node_health(1))
+        self.status.assert_not_called()
+
+    def test_node_lifecycle_serializes_restart_and_coalesces_reconnect(self):
+        entered, release, restarted = threading.Event(), threading.Event(), threading.Event()
+        self.runtime.nodes[1] = self.node
+        def blocking_connect():
+            entered.set()
+            if not release.wait(3):
+                raise TimeoutError('test release not signalled')
+            self.connect()
+        self.node.connect.side_effect = blocking_connect
+        first = threading.Thread(target=operations.connect_node, args=(1, self.config))
+        second = threading.Thread(target=lambda: (operations.restart_node(1, self.config), restarted.set()))
+        try:
+            first.start()
+            self.assertTrue(entered.wait(2))
+            operations.connect_node(1, self.config)
+            self.assertIsNone(operations.check_node_health(1))
+            second.start()
+            self.assertFalse(restarted.wait(0.05))
+        finally:
+            release.set()
+            first.join(3)
+            if second.ident is not None:
+                second.join(3)
+        self.assertFalse(first.is_alive())
+        self.assertFalse(second.is_alive())
+        self.node.connect.assert_called_once()
+        self.node.start.assert_called_once()
+        self.node.restart.assert_called_once()
+        self.node.disconnect.assert_not_called()
+
+    def test_other_node_can_connect_while_first_is_busy(self):
+        ready, release = threading.Event(), threading.Event()
+        def hold_first():
+            with operations._node_lock(1):
+                ready.set()
+                release.wait(3)
+        worker = threading.Thread(target=hold_first)
+        try:
+            worker.start()
+            self.assertTrue(ready.wait(2))
+            operations.connect_node(2, self.config)
+            self.node.start.assert_called_once()
+        finally:
+            release.set()
+            worker.join(3)
+
+    def test_account_reconciliation_runs_after_connection_lock_is_released(self):
+        acquired = []
+        def reconcile():
+            self.assertNotIn(1, operations._connecting_nodes)
+            def probe():
+                lock = operations._node_lock(1)
+                ok = lock.acquire(blocking=False)
+                acquired.append(ok)
+                if ok:
+                    lock.release()
+            worker = threading.Thread(target=probe)
+            worker.start()
+            worker.join(2)
+            self.assertFalse(worker.is_alive())
+        self.accounts.side_effect = reconcile
+        self.run_connection()
+        self.assertEqual(acquired, [True])
+
+    def test_healthy_node_clears_stale_error_without_restarting(self):
+        self.runtime.nodes[1] = self.node
+        self.node.connected = self.node.started = True
+        self.assertIsNone(operations.check_node_health(1))
+        self.status.assert_called_once_with(1, 'connected', version='26.3.27')
+        self.node.restart.assert_not_called()
+        self.node.disconnect.assert_not_called()
+
+    def test_already_healthy_node_does_not_rewrite_status_or_version(self):
+        self.crud.get_node_by_id.return_value.status = 'connected'
+        self.runtime.nodes[1] = self.node
+        self.node.connected = self.node.started = True
+        self.assertIsNone(operations.check_node_health(1))
+        self.status.assert_not_called()
+        self.node.get_version.assert_not_called()
+
+    def test_health_recovery_keeps_last_version_when_response_has_no_version(self):
+        self.crud.get_node_by_id.return_value.xray_version = '26.3.27'
+        self.runtime.nodes[1] = self.node
+        self.node.connected = self.node.started = True
+        self.node.get_version.return_value = None
+        self.assertIsNone(operations.check_node_health(1))
+        self.status.assert_called_once_with(1, 'connected', version='26.3.27')

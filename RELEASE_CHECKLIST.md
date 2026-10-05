@@ -1,5 +1,16 @@
 # Marzban 主面板发布清单
 
+## MR-20261006-NODE-RECOVERY（本地完成，未发布）
+
+- [x] 生命周期/退避、健康隔离、阶段原因和 TLS 期限修复；原版组件与数据保留。
+- [x] 最终同一运行时代码两轮全量 95/95；真实 TLS/mTLS/旧服务兼容、并发/管理路由、恢复与订阅/策略回归通过。
+- [x] TypeScript/Vite、compileall、pip check、固定入口 Check/diff 检查通过；既有警告单独记录。
+- [x] README/功能/变更/API/流程及工作区 05/08/09 登记；Node/scripts 无线协议或安装变化、不需本轮构建更新。
+- [ ] 本轮提交/推送、Actions 成功、双架构镜像/OCI revision 核对：未执行。
+- [ ] 主控更新、原版重连/自动恢复、故障 message、订阅/真实应用访问验收：未执行。
+
+[本轮证据与验收范围](docs/NODE_RECOVERY_RELEASE.md)。不能把以下历史镜像或当前 latest 的旧代码当成本轮发布结果。
+
 ## MR-20261003-SCHEDULER-DEPENDENCY（镜像已发布，服务器验收待完成）
 
 - [x] APScheduler `3.11.3` 已替换旧 `3.9.1.post1`；不再依赖 `pkg_resources`，Docker 不再锁定旧 setuptools。

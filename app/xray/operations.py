@@ -1,6 +1,7 @@
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
+from threading import Lock, RLock
+from time import monotonic
 from typing import TYPE_CHECKING
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -236,6 +237,11 @@ def sync_user_device_accounts(dbuser: "DBUser"):
 
 
 def remove_node(node_id: int):
+    with _node_lock(node_id):
+        _remove_node(node_id)
+
+
+def _remove_node(node_id: int):
     if node_id in xray.nodes:
         try:
             xray.nodes[node_id].disconnect()
@@ -249,6 +255,11 @@ def remove_node(node_id: int):
 
 
 def add_node(dbnode: "DBNode"):
+    with _node_lock(dbnode.id):
+        return _add_node(dbnode)
+
+
+def _add_node(dbnode: "DBNode"):
     remove_node(dbnode.id)
 
     tls = get_tls()
@@ -358,98 +369,137 @@ def _change_node_status(node_id: int, status: NodeStatus, message: str = None, v
             db.rollback()
 
 
-global _connecting_nodes
 _connecting_nodes = {}
+_node_locks = {}
+_node_locks_guard = Lock()
+_node_retry_after = {}
+NODE_RETRY_DELAY = 30
 
 
-@threaded_function
-def connect_node(node_id, config=None):
-    global _connecting_nodes
+def _node_lock(node_id):
+    # Construct exactly one reentrant lifecycle lock for each node.
+    with _node_locks_guard:
+        if node_id not in _node_locks:
+            _node_locks[node_id] = RLock()
+        return _node_locks[node_id]
 
-    if _connecting_nodes.get(node_id):
+
+def node_lifecycle_lock(node_id):
+    """Serialize admin configuration/deletion with in-flight node recovery."""
+    return _node_lock(node_id)
+
+
+def _node_failure(node_id, stage, exc):
+    message = f"{stage}: {exc}"[:2000]
+    _node_retry_after[node_id] = monotonic() + NODE_RETRY_DELAY
+    _change_node_status(node_id, NodeStatus.error, message=message)
+    logger.warning("Node %s failed: %s", node_id, message)
+
+
+def _operate_node(node_id, config, restart, automatic):
+    lock = _node_lock(node_id)
+    # Explicit configuration restarts must not be lost. Reconnect clicks and
+    # periodic recovery coalesce instead of queuing duplicate sessions.
+    if not lock.acquire(blocking=restart and not automatic):
         return
-
-    with GetDB() as db:
-        dbnode = crud.get_node_by_id(db, node_id)
-        if not dbnode:
+    stage = "Read node configuration"
+    reconcile_accounts = False
+    try:
+        if automatic and monotonic() < _node_retry_after.get(node_id, 0):
             return
-        egress = read_egress(db, dbnode)
-
-
-    try:
-        node = xray.nodes[dbnode.id]
-        assert node.connected
-    except (KeyError, AssertionError):
-        node = xray.operations.add_node(dbnode)
-
-    try:
         _connecting_nodes[node_id] = True
+        with GetDB() as db:
+            dbnode = crud.get_node_by_id(db, node_id)
+            if not dbnode:
+                return
+            if dbnode.status == NodeStatus.disabled:
+                remove_node(node_id)
+                return
+            egress = read_egress(db, dbnode)
 
         _change_node_status(node_id, NodeStatus.connecting)
-        logger.info(f"Connecting to \"{dbnode.name}\" node")
+        logger.info("%s node %s", "Restarting" if restart else "Connecting to", node_id)
+        stage = "Create node transport"
+        node = xray.nodes.get(node_id)
+        if node is None:
+            node = xray.operations.add_node(dbnode)
 
+        # Reuse an expired transport instead of disconnecting (which stops the
+        # remote core). Refresh its authenticated session only when necessary.
+        stage = "Control session / TLS"
         if not node.connected:
             node.connect()
 
+        stage = "Prepare node configuration / health"
         if config is None:
             config = xray.config.include_db_users()
         config = for_node(config, egress, node.get_health()
                           if egress and egress.get("udp_mode", "legacy") != "legacy" else None)
 
-        node.start(config)
+        stage = "Restart Xray / API readiness" if restart else "Start Xray / API readiness"
+        if restart:
+            node.restart(config)
+        else:
+            node.start(config)
+        stage = "Read Xray version"
         version = node.get_version()
+        # Connection readiness is independent of the best-effort, potentially
+        # lengthy reconciliation of every user's existing device accounts.
         _change_node_status(node_id, NodeStatus.connected, version=version)
+        _node_retry_after.pop(node_id, None)
+        stage = "Synchronize device policies / accounts"
         sync_node_device_policies(node_id)
-        sync_all_node_device_accounts()
-        logger.info(f"Connected to \"{dbnode.name}\" node, xray run on v{version}")
-
-    except Exception as e:
-        _change_node_status(node_id, NodeStatus.error, message=str(e))
-        logger.info(f"Unable to connect to \"{dbnode.name}\" node: {e}")
-
+        reconcile_accounts = True
+        logger.info("Connected to node %s, Xray version %s", node_id, version)
+    except Exception as exc:
+        # A failed readiness check must not stop a core serving other users.
+        _node_failure(node_id, stage, exc)
     finally:
-        try:
-            del _connecting_nodes[node_id]
-        except KeyError:
-            pass
+        _connecting_nodes.pop(node_id, None)
+        lock.release()
+    # Global account reconciliation is best effort and may cover many users.
+    # Do not hold this node's lifecycle lock throughout that unrelated work.
+    if reconcile_accounts:
+        sync_all_node_device_accounts()
 
 
 @threaded_function
-def restart_node(node_id, config=None):
-    with GetDB() as db:
-        dbnode = crud.get_node_by_id(db, node_id)
-        if not dbnode:
-            return
-        egress = read_egress(db, dbnode)
+def connect_node(node_id, config=None, automatic=False):
+    _operate_node(node_id, config, restart=False, automatic=automatic)
 
 
+@threaded_function
+def restart_node(node_id, config=None, automatic=False):
+    _operate_node(node_id, config, restart=True, automatic=automatic)
+
+
+def check_node_health(node_id):
+    """Check one idle node; return a recovery action without holding its lock."""
+    lock = _node_lock(node_id)
+    if not lock.acquire(blocking=False):
+        return None
     try:
-        node = xray.nodes[dbnode.id]
-    except KeyError:
-        node = xray.operations.add_node(dbnode)
-
-    if not node.connected:
-        return connect_node(node_id, config)
-
-    try:
-        logger.info(f"Restarting Xray core of \"{dbnode.name}\" node")
-
-        if config is None:
-            config = xray.config.include_db_users()
-        config = for_node(config, egress, node.get_health()
-                          if egress and egress.get("udp_mode", "legacy") != "legacy" else None)
-
-        node.restart(config)
-        sync_node_device_policies(node_id)
-        sync_all_node_device_accounts()
-        logger.info(f"Xray core of \"{dbnode.name}\" node restarted")
-    except Exception as e:
-        _change_node_status(node_id, NodeStatus.error, message=str(e))
-        logger.info(f"Unable to restart node {node_id}")
-        try:
-            node.disconnect()
-        except Exception:
-            pass
+        if monotonic() < _node_retry_after.get(node_id, 0):
+            return None
+        node = xray.nodes.get(node_id)
+        if node is None or not node.connected:
+            return "connect"
+        if not node.started:
+            raise ConnectionError("Node Xray core is not started")
+        node.api.get_sys_stats(timeout=2)
+        # A late-ready API can recover without another restart. Clear only a
+        # stale failure/connecting state; do not rewrite healthy rows each tick.
+        with GetDB() as db:
+            dbnode = crud.get_node_by_id(db, node_id)
+            if dbnode and dbnode.status in (NodeStatus.error, NodeStatus.connecting):
+                version = node.get_version() or dbnode.xray_version
+                _change_node_status(node_id, NodeStatus.connected, version=version)
+    except Exception as exc:
+        _change_node_status(node_id, NodeStatus.error, message=f"Health check: {exc}"[:2000])
+        logger.warning("Node %s health check failed: %s", node_id, exc)
+        return "restart"
+    finally:
+        lock.release()
 
 
 __all__ = [
@@ -459,6 +509,8 @@ __all__ = [
     "remove_node",
     "connect_node",
     "restart_node",
+    "check_node_health",
+    "node_lifecycle_lock",
     "sync_node_device_policies",
     "sync_all_node_device_policies",
     "sync_all_node_device_accounts",
