@@ -1,13 +1,14 @@
 # Mr.shaw Marzban Fork 更新记录
 
-## MR-DASHBOARD-I18N-MOBILE（本地，未发布）
+## MR-DASHBOARD-I18N-MOBILE（镜像已发布，服务器/视觉验收待完成）
 
 - 修复选择语言后在线/到期、状态筛选、日历与部分提示仍为英语，补齐原四语言词典/复数。
 - 修复状态筛选值误绑定 sort，传给 API 的 status 枚举不变；原 hosts 必填提示在验证时读取当前语言。
 - 原入站弹窗桌面保持 440px、手机左右留 12px；内容随容器收窄，长标题/帮助/原操作行换行。
 - 新增 34 项回归并接入原 CI，本地主控 95 项、TypeScript、生产与原组件预览构建通过。
 - 无 API/schema/认证/端口/证书/Node/scripts/Xray 变化，无新外部源码借入；原主题与作者归属保留。
-- 浏览器安全策略校验无法授权，实际手机视觉验收待完成；无提交/推送/Actions/新镜像/服务器验收。详情 `docs/DASHBOARD_I18N_MOBILE.md`。
+- PR #11 已合并为 `5655213099c18532ff3daff5cead010c181a19e9`；分支 Actions `37352009623` 和正式 Actions `37353281396` 成功（Linux 95/95、语言 34/34、类型/生产构建与 Xray 闸门通过）。latest index `sha256:793c61738cf18f8641c2ce4b86037a41064903b7e59e4c49a296f8121c2947ce`，两架构 digest/OCI revision 已核对。
+- 镜像推送日志为 `2026-10-05T18:16:26Z`（UTC，香港 2026-10-06）。浏览器安全策略校验无法授权，实际手机视觉与服务器验收待完成；不是稳定发布声明。详情 `docs/DASHBOARD_I18N_MOBILE.md`；发布证据仅文档回写使用 `[skip ci]`，不重复构建运行时代码。
 
 ## MR-20261006-NODE-RECOVERY：节点卡住/恢复风险修复（镜像已发布，服务器验收待完成）
 

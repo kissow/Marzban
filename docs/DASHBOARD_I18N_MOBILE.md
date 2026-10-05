@@ -43,4 +43,42 @@
 3. 切换 en/fa/zh/ru，核对在线/到期、状态筛选、日历与必填提示；实际 API 状态参数仍为原枚举。
 4. 后续仍需展示实际组件效果并完成手机端视觉验收。2026-10-06 用户明确要求“上传仓库，构建，给我服务器更新”，本轮按该授权先发布，未将其登记为视觉验收通过。
 
-2026-10-06 发布前复核：语言回归 34/34、主控 95/95、固定入口 Check、TypeScript、生产 Vite 构建再次通过。按用户明确授权进入提交/推送和 Actions 发布流程；实际提交、Actions、镜像摘要将在完成后回写。服务器未更新/验收，真实视觉验收待完成；旧镜像不作为本轮发布证据。
+2026-10-06 发布前复核：语言回归 34/34、主控 95/95、固定入口 Check、TypeScript、生产 Vite 构建再次通过。按用户明确授权完成提交/推送、合并与镜像发布；服务器未更新/验收，真实视觉验收待完成；旧镜像不作为本轮发布证据。
+
+## 正式发布证据
+
+- 修复源提交：`33081ba100b7c21d652db91e78497c4de447a63d`；分支 Actions [37352009623](https://github.com/kissow/Marzban/actions/runs/37352009623) 成功。
+- [PR #11](https://github.com/kissow/Marzban/pull/11) 已合并；master/镜像源 revision：`5655213099c18532ff3daff5cead010c181a19e9`。
+- 正式 Actions [37353281396](https://github.com/kissow/Marzban/actions/runs/37353281396) 成功：Linux 后端 95/95、语言 34/34、TypeScript/生产构建、正式核心版本闸门通过。
+- 正式镜像：`ghcr.io/kissow/marzban:latest`；index `sha256:793c61738cf18f8641c2ce4b86037a41064903b7e59e4c49a296f8121c2947ce`。
+- latest 推送完成日志：`2026-10-05T18:16:26Z`（UTC；香港 2026-10-06）。登记时间采用本地日期，未把 UTC 的 10 月 5 日写成另一次发布。
+
+| 架构 | Manifest digest | Config digest | OCI revision |
+| --- | --- | --- | --- |
+| linux/amd64 | `sha256:7c1d7aebb9037ff0918d1d305677983097a55c696e8b56c779ecdf5a7c34894f` | `sha256:3b66552f5faf9386c3f4fd1f1f3fd8aefe139078371452190fdd630981d4cf83` | `5655213099c18532ff3daff5cead010c181a19e9` |
+| linux/arm64 | `sha256:ca9f1cc579c9a5f8d700d80669e538fe5b35a51b3f985f4ae51bdccbd3cfd1bb` | `sha256:2bfc47defaad8cd94db369de67a5d3ab07e9c170c46c46acb64015b9a8118924` | `5655213099c18532ff3daff5cead010c181a19e9` |
+
+已通过 GHCR 独立读取 index → 双架构 manifest → config，核对原始字节 SHA-256 与描述符匹配、两个 OCI revision 等于合并源、核对前后 latest 不变。首次读取 config 时远端连接短暂断开，重试成功，不视作构建失败。文档证据回写使用 `[skip ci]`；文档提交不是镜像源提交。
+
+GitHub Actions 仍有既有 action Node.js 20 弃用和 ubuntu-latest 未来切换提示，属于构建环境提示；未阻断本次成功发布。既有 datetime/Pydantic 和大 chunk 提示保留，不宣称零 BUG。
+
+## 已切换 Fork 的服务器更新
+
+仅更新主面板，不重复 adopt/install，不改 Node：
+
+```sh
+marzban update
+marzban status
+marzban logs --no-follow 2>&1 | tail -n 100
+```
+
+root 无需 sudo。现有 Fork update 脚本先备份环境、compose 与本地数据目录，再拉取/重启；外部数据库仍须单独备份。更新会短暂重启，禁止删卷、重装或覆盖证书/环境文件。
+
+容器名可能是 marzban-1，按服务标签确认本次 revision：
+
+```sh
+docker ps --filter label=com.docker.compose.service=marzban --format '{{.ID}}' |
+  xargs -r docker inspect --format '{{.Name}} | {{.Config.Image}} | {{index .Config.Labels "org.opencontainers.image.revision"}}'
+```
+
+预期 revision 为上表 `5655213099c18532ff3daff5cead010c181a19e9`。若不同，先核对 compose 镜像和更新日志，不宣称成功。服务器/视觉验收按前述四项检查；本轮尚未执行，镜像发布不等于验收通过。

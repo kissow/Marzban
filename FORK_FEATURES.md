@@ -1,10 +1,10 @@
 # Marzban 开源扩展功能
 
-## MR-DASHBOARD-I18N-MOBILE：多语言与手机入站弹窗（本地，未发布）
+## MR-DASHBOARD-I18N-MOBILE：多语言与手机入站弹窗（镜像已发布，服务器/视觉验收待完成）
 
 在原 React/Chakra 组件内完善四种语言文案、在线/到期时间、日历、状态筛选及原表单校验；保留技术名称与 API 枚举。设置入站桌面 440px，手机最大为视口减 24px，长标题/原帮助/操作行可换行。主题、协议、证书、端口、数据、HWID/UDP、Xray v26.3.27 不变；Node/scripts 无本轮变化或更新要求。
 
-语言回归 34/34、主控回归 95/95、类型和构建通过；实际浏览器视觉验收待完成，不宣称上线。[详情](docs/DASHBOARD_I18N_MOBILE.md)。
+本地/Linux CI 语言回归 34/34、主控回归 95/95、类型和构建通过；PR #11 合入 `56552130`、Actions `37353281396` 成功，latest 双架构 digest/OCI revision 已核对。实际浏览器视觉和服务器验收待完成，不宣称稳定上线。[详情及更新命令](docs/DASHBOARD_I18N_MOBILE.md)。
 
 ## MR-20261006-NODE-RECOVERY（镜像已发布，服务器验收待完成）
 

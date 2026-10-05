@@ -1,10 +1,10 @@
 # Mr.shaw 扩展接口与更新规范
 
-## MR-DASHBOARD-I18N-MOBILE：展示层修复，接口不变（未发布）
+## MR-DASHBOARD-I18N-MOBILE：展示层修复，接口不变（镜像已发布，服务器/视觉验收待完成）
 
 `GET /api/users` status 查询仍用 `active/on_hold/disabled/limited/expired`，只翻译显示文案。`GET /api/hosts`、`PUT /api/hosts` 请求/响应/管理员权限及端口转换不变；必填提示只是前端本地化。无接口新增删除、认证变更或数据库迁移。Node REST/RPyC、健康/设备策略协议及部署命令不变，Node/scripts 不需本轮更新；Xray v26.3.27 不变。
 
-本地语言 34/34、主控 95/95、TypeScript/构建通过。响应式源代码约束测试不是实际浏览器验收，本轮无线上发布证据。[详情](docs/DASHBOARD_I18N_MOBILE.md)。
+本地/Linux CI 语言 34/34、主控 95/95、TypeScript/构建通过。PR #11 合入 `56552130`，Actions `37353281396` 成功，latest 双架构摘要和 OCI revision 已核对；已切换 Fork 的主控使用 `marzban update`，Node 不需更新。响应式源代码约束测试不是实际浏览器验收，服务器/视觉验收仍待完成。[完整发布证据](docs/DASHBOARD_I18N_MOBILE.md)。
 
 ## MR-20261006-NODE-RECOVERY：既有接口行为（镜像已发布，服务器验收待完成）
 

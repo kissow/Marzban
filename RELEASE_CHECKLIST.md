@@ -1,15 +1,17 @@
 # Marzban 主面板发布清单
 
-## MR-DASHBOARD-I18N-MOBILE（用户授权发布，线上构建待完成）
+## MR-DASHBOARD-I18N-MOBILE（镜像已发布，服务器/视觉验收待完成）
 
 - [x] 原 React/Chakra 局部修改，主题、协议、证书、端口、数据保留。
 - [x] 四语言/时间/原表单/API 枚举/响应式源代码约束回归 34/34；主控完整回归 95/95。
 - [x] TypeScript、生产与原组件预览构建通过；README/功能/更新/API 文档与工作区 05/08/09 补充。
 - [ ] 原组件实际浏览器 320/375/390px、桌面、深浅主题视觉核对。当前安全策略校验无法授权，不能用代码测试代替。
 - [x] 2026-10-06 用户明确要求上传/构建，授权先发布；实际视觉验收仍待完成，未登记为通过。
-- [ ] 授权后推送、Actions、双架构镜像 revision/digest、服务器验收分别登记。
+- [x] PR #11 合入 master `5655213099c18532ff3daff5cead010c181a19e9`；正式 Actions `37353281396` 成功（Linux 95/95、语言 34/34、类型/构建及 Xray 版本闸门）。
+- [x] GHCR latest index `sha256:793c61738cf18f8641c2ce4b86037a41064903b7e59e4c49a296f8121c2947ce`；两架构 manifest/config 原始字节哈希、OCI revision 与核对前后 latest 一致，完整证据见详情。
+- [ ] 服务器备份/更新、镜像 revision、四语言切换、手机原入站字段/帮助/保存/关闭真实验收。
 
-Node/scripts 无变化；本轮未发布，不沿用历史镜像证据。[详情](docs/DASHBOARD_I18N_MOBILE.md)。
+Node/scripts 无变化、不需本轮更新；本次镜像已发布，不沿用历史镜像证据。文档证据回写 `[skip ci]` 不改变已核对镜像。[详情](docs/DASHBOARD_I18N_MOBILE.md)。
 
 ## MR-20261006-NODE-RECOVERY（镜像已发布，服务器验收待完成）
 
