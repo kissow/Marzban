@@ -1,5 +1,11 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
+## MR-20261006-NODE-RECOVERY（本地完成，未发布）
+
+本轮只改主控恢复代码与测试/文档：每节点生命周期互斥、健康隔离、安全重试、TLS 阶段期限和原 message 原因。最终同代码两轮全量 95/95，前端构建及依赖/语法/diff 检查通过；Node/scripts 无运行时/协议/命令变化，无需本轮构建更新。
+
+已完成 README、FORK_FEATURES、CHANGELOG、接口和发布清单，以及工作区 05/08/09。尚未提交推送、Actions/镜像或服务器验收。下次获授权发布必须登记本轮新源、Actions、双架构 digest/OCI revision，然后验收；不得复用下方历史记录。[本轮记录](NODE_RECOVERY_RELEASE.md)。
+
 ## MR-20261003-SCHEDULER-DEPENDENCY：调度器与 Node 初连修复（2026-10-03，镜像已发布，服务器验收待完成）
 
 - 根因：`connect_node()` 在未建立 Node 会话时先调用健康检查，非 legacy 出口首次连接会得到 `Node is not connected`。

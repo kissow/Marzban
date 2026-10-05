@@ -5,33 +5,35 @@ from app import app, logger, scheduler, xray
 from app.db import GetDB, crud
 from app.models.node import NodeStatus
 from config import JOB_CORE_HEALTH_CHECK_INTERVAL
-from xray_api import exc as xray_exc
 
 
 def core_health_check():
     config = None
 
     # main core
-    if not xray.core.started:
-        if not config:
-            config = xray.config.include_db_users()
-        xray.core.restart(config)
+    try:
+        if not xray.core.started:
+            if config is None:
+                config = xray.config.include_db_users()
+            xray.core.restart(config)
+    except Exception:
+        logger.exception("Unable to recover main Xray core")
 
     # nodes' core
-    for node_id, node in list(xray.nodes.items()):
-        if node.connected:
-            try:
-                assert node.started
-                node.api.get_sys_stats(timeout=2)
-            except (ConnectionError, xray_exc.XrayError, AssertionError):
-                if not config:
+    # Include failed transport construction too, not only existing objects.
+    with GetDB() as db:
+        node_ids = [row.id for row in crud.get_nodes(db=db, enabled=True)]
+    for node_id in node_ids:
+        try:
+            action = xray.operations.check_node_health(node_id)
+            if action:
+                if config is None:
                     config = xray.config.include_db_users()
-                xray.operations.restart_node(node_id, config)
-
-        if not node.connected:
-            if not config:
-                config = xray.config.include_db_users()
-            xray.operations.connect_node(node_id, config)
+                operation = (xray.operations.restart_node if action == "restart"
+                             else xray.operations.connect_node)
+                operation(node_id, config, automatic=True)
+        except Exception:
+            logger.exception("Unable to check node %s", node_id)
 
 
 @app.on_event("startup")

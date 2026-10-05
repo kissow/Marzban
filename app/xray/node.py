@@ -19,6 +19,8 @@ from websocket import WebSocketConnectionClosedException, WebSocketTimeoutExcept
 from app.xray.config import XRayConfig
 from xray_api import XRay as XRayAPI
 
+NODE_CONNECT_TIMEOUT = 5
+
 
 def string_to_temp_file(content: str):
     file = tempfile.NamedTemporaryFile(mode='w+t')
@@ -149,7 +151,7 @@ class ReSTXRayNode:
         return self._api
 
     def connect(self):
-        self._node_cert = ssl.get_server_certificate((self.address, self.port))
+        self._node_cert = ssl.get_server_certificate((self.address, self.port), timeout=NODE_CONNECT_TIMEOUT)
         self._node_certfile = string_to_temp_file(self._node_cert)
         self.session.verify = self._node_certfile.name
 
@@ -223,7 +225,7 @@ class ReSTXRayNode:
         try:
             grpc.channel_ready_future(self._api._channel).result(timeout=5)
         except grpc.FutureTimeoutError:
-            raise ConnectionError('Failed to connect to node\'s API')
+            raise ConnectionError(f"Node Xray API port {self.api_port} not ready after 5s; check its listener and firewall")
 
         return res
 
@@ -256,7 +258,7 @@ class ReSTXRayNode:
         try:
             grpc.channel_ready_future(self._api._channel).result(timeout=5)
         except grpc.FutureTimeoutError:
-            raise ConnectionError('Failed to connect to node\'s API')
+            raise ConnectionError(f"Node Xray API port {self.api_port} not ready after 5s; check its listener and firewall")
 
         return res
 
@@ -368,23 +370,42 @@ class RPyCXRayNode:
         tries = 0
         while True:
             tries += 1
-            self._node_cert = ssl.get_server_certificate((self.address, self.port))
+            self._node_cert = ssl.get_server_certificate((self.address, self.port), timeout=NODE_CONNECT_TIMEOUT)
             self._node_certfile = string_to_temp_file(self._node_cert)
-            conn = rpyc.ssl_connect(self.address,
-                                    self.port,
-                                    service=self._service,
-                                    keyfile=self._keyfile.name,
-                                    certfile=self._certfile.name,
-                                    ca_certs=self._node_certfile.name,
-                                    keepalive=True)
+            conn = self._connect_transport()
             try:
                 conn.ping()
                 self.connection = conn
                 break
             except EOFError as exc:
+                conn.close()
                 if tries <= 3:
                     continue
                 raise exc
+            except Exception:
+                conn.close()
+                raise
+
+    def _connect_transport(self):
+        # RPyC's ssl_connect does not expose a TLS handshake deadline. Keep
+        # mutual TLS and the existing pinned Node certificate, but bound the
+        # socket/handshake before handing the blocking stream to RPyC.
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.check_hostname = False
+        context.load_verify_locations(cafile=self._node_certfile.name)
+        context.load_cert_chain(self._certfile.name, self._keyfile.name)
+        sock = socket.create_connection((self.address, self.port), timeout=NODE_CONNECT_TIMEOUT)
+        try:
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            sock = context.wrap_socket(sock, server_hostname=self.address)
+            sock.settimeout(None)
+            return rpyc.utils.factory.connect_stream(
+                rpyc.core.stream.SocketStream(sock), service=self._service,
+                config={"sync_request_timeout": 10})
+        except Exception:
+            sock.close()
+            raise
 
     @property
     def connected(self):
@@ -575,12 +596,11 @@ class XRayNode:
 
         # trying to detect what's the server of node
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(1)
-            s.connect((address, port))
-            s.send(b'HEAD / HTTP/1.0\r\n\r\n')
-            s.recv(1024)
-            s.close()
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(1)
+                s.connect((address, port))
+                s.send(b'HEAD / HTTP/1.0\r\n\r\n')
+                s.recv(1024)
             # it might be uvicorn
             return ReSTXRayNode(
                 address=address,

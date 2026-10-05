@@ -1,5 +1,14 @@
 # Mr.shaw Marzban Fork 更新记录
 
+## MR-20261006-NODE-RECOVERY：节点卡住/恢复风险修复（本地完成，未发布）
+
+- 每 Node 连接/重启/修改/删除互斥，重复重连合并，自动退避与手动重试分开；失败不无条件 disconnect 停核心。
+- 健康检查隔离异常并覆盖未创建 transport 的启用节点；健康恢复清旧状态，不反复写健康节点状态。全用户账号协调不占节点生命周期锁。
+- 控制会话、TLS、配置、API readiness 等阶段错误使用原 message；REST/RPyC 取证书及 RPyC TCP/TLS 加阶段期限，保留 mTLS/证书校验与旧 Node 兼容，失败连接关闭。
+- 最终代码两轮全量 95/95 通过；Python/TypeScript/Vite/pip/diff 检查通过。既有弃用和 chunk 告警单独保留。
+- UI/API/schema/线协议、证书、端口、用户数据、HWID/UDP 及固定核心 v26.3.27 未改；Node/scripts 无需本轮更新。
+- 未推送、构建、发布或服务器验收；[日志证据、范围和发布清单](docs/NODE_RECOVERY_RELEASE.md)，不复用历史镜像摘要。
+
 ## MR-20261003-SCHEDULER-DEPENDENCY：移除 APScheduler `pkg_resources` 弃用警告（2026-10-03）
 
 - 将 `APScheduler` 从 `3.9.1.post1` 升级并锁定到 `3.11.3`。新版使用 `importlib.metadata`，不再导入已弃用的 `pkg_resources`；不是屏蔽警告。
