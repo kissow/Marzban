@@ -1,13 +1,14 @@
 # Mr.shaw Marzban Fork 更新记录
 
-## MR-20261006-NODE-RECOVERY：节点卡住/恢复风险修复（本地完成，未发布）
+## MR-20261006-NODE-RECOVERY：节点卡住/恢复风险修复（镜像已发布，服务器验收待完成）
 
 - 每 Node 连接/重启/修改/删除互斥，重复重连合并，自动退避与手动重试分开；失败不无条件 disconnect 停核心。
 - 健康检查隔离异常并覆盖未创建 transport 的启用节点；健康恢复清旧状态，不反复写健康节点状态。全用户账号协调不占节点生命周期锁。
 - 控制会话、TLS、配置、API readiness 等阶段错误使用原 message；REST/RPyC 取证书及 RPyC TCP/TLS 加阶段期限，保留 mTLS/证书校验与旧 Node 兼容，失败连接关闭。
 - 最终代码两轮全量 95/95 通过；Python/TypeScript/Vite/pip/diff 检查通过。既有弃用和 chunk 告警单独保留。
 - UI/API/schema/线协议、证书、端口、用户数据、HWID/UDP 及固定核心 v26.3.27 未改；Node/scripts 无需本轮更新。
-- 未推送、构建、发布或服务器验收；[日志证据、范围和发布清单](docs/NODE_RECOVERY_RELEASE.md)，不复用历史镜像摘要。
+- PR #10 已合并，源 `122632c8df4b57c43706cb59fb183e7386004ce1`；Actions `37340574125` 首次成功，Linux 95/95、前端生产构建与 Xray 版本闸门通过。latest index `sha256:ecbe03895e28c1dd7d9441907f967b1806f105e00e01d4dc36232bf7f39bb42b`，amd64/arm64 摘要与 OCI revision 已核对。Actions 上传证据为 `2026-10-05T16:33:03Z`（UTC）。
+- 服务器部署与真实网络验收未执行；[日志证据、架构摘要、兼容边界和验收清单](docs/NODE_RECOVERY_RELEASE.md)。后续发布证据提交仅改文档，使用 `[skip ci]` 保留本轮已核对镜像，不把文档提交冒充镜像源提交。
 
 ## MR-20261003-SCHEDULER-DEPENDENCY：移除 APScheduler `pkg_resources` 弃用警告（2026-10-03）
 

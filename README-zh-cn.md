@@ -1,4 +1,4 @@
-> **节点连接恢复（2026-10-06，仅本地完成，未发布）：** 增加节点生命周期互斥、隔离健康恢复、阶段性失败原因、TLS 握手超时及安全重试；同一最终代码两轮全量 95/95、前端构建与依赖检查通过。UI/API/数据库/Node 线协议/Xray 不变，已配对 Node 和 scripts 无需本轮更新。未推送、运行本轮 Actions、发布镜像或服务器验收。[范围、接口含义、测试及发布闸门](docs/NODE_RECOVERY_RELEASE.md)。下方镜像记录均为此前发布，不代表本轮修复已上线。
+> **节点连接恢复（镜像已发布，服务器验收待完成）：** 增加节点生命周期互斥、隔离健康恢复、阶段性失败原因、TLS 握手超时及安全重试。两轮本地全量 95/95 与 Linux CI 通过；PR #10 合入 `122632c8`，Actions `37340574125` 成功，`ghcr.io/kissow/marzban:latest` 双架构 OCI revision 已核对。UI/API/数据库/Node 线协议/Xray 不变，已配对 Node 和 scripts 无需本轮更新。[新镜像摘要、范围、接口含义及服务器验收闸门](docs/NODE_RECOVERY_RELEASE.md)。本轮未执行服务器部署与真实网络验收。
 
 > **节点初连/调度器维护（2026-10-03，镜像已发布，服务器验收待完成）：** 非 legacy 出口先建立已有认证会话，再检查健康并启动；保留具体错误原因。APScheduler 固定到 3.11.3，消除 pkg_resources 弃用依赖。本地/Linux CI 69/69、前端检查通过；源 `78e7b8e`、Actions `37135175798` 成功，双架构 latest 和 OCI revision 已核对。API/数据库/UI/证书/端口/HWID/Xray 不变，已配对 Node 与 scripts 本轮不需更新。[兼容、测试和发布证据](docs/NODE_CONNECTION_RELEASE.md)。下方镜像记录属于此前发布。
 

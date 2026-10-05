@@ -1,10 +1,10 @@
 # Marzban 开源扩展功能
 
-## MR-20261006-NODE-RECOVERY（本地完成，未发布）
+## MR-20261006-NODE-RECOVERY（镜像已发布，服务器验收待完成）
 
 节点连接/重启/管理修改删除使用每节点生命周期锁；重复重连合并，自动失败恢复退避 30 秒，手动绕过退避。复用失效会话 transport，失败重启不无条件停远程核心；健康故障隔离，恢复时清旧状态。TLS 握手增加阶段超时并保留双向认证，错误写入原 message。全用户账号协调移出节点锁。
 
-同一最终代码两轮 95/95 与前端/依赖检查通过；UI、API/schema、用户数据、证书、端口、HWID/UDP 和 Xray v26.3.27 不变。Node/scripts 无运行时变化无需本轮更新。尚未推送/构建/服务器验收；[详情和边界](docs/NODE_RECOVERY_RELEASE.md)。
+同一最终代码两轮 95/95 与 Linux CI、前端/依赖检查通过；UI、API/schema、用户数据、证书、端口、HWID/UDP 和 Xray v26.3.27 不变。Node/scripts 无运行时变化无需本轮更新。PR #10、源 `122632c8` 与 Actions `37340574125` 已完成；latest 双架构摘要和 OCI revision 已核对，服务器验收未执行。[发布证据和边界](docs/NODE_RECOVERY_RELEASE.md)。
 
 ## MR-20261003-SCHEDULER-DEPENDENCY：调度器依赖维护（镜像已发布，服务器验收待完成）
 

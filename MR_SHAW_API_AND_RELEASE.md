@@ -1,10 +1,10 @@
 # Mr.shaw 扩展接口与更新规范
 
-## MR-20261006-NODE-RECOVERY：既有接口行为（本地完成，未发布）
+## MR-20261006-NODE-RECOVERY：既有接口行为（镜像已发布，服务器验收待完成）
 
 `GET /api/nodes` 与 `GET /api/node/{node_id}` 原 status/message/xray_version 返回合同不变，message 增加内部失败阶段。`POST /api/node/{node_id}/reconnect` 原 sudo-admin 权限/响应不变：200 仅表示异步任务接受，进行中的重复重连可合并，不等于连接成功。`PUT`/`DELETE /api/node/{node_id}` 内部与恢复使用同一节点锁；请求、响应、权限不变。
 
-Node REST/RPyC 方法、认证、字段及健康/设备策略线协议不变；没有新端口、数据库迁移、UI/HWID/UDP/核心变化。已配对 Node/scripts 无需本轮更新，主控需未来的新镜像。本地最终两轮 95/95；未推送/构建/服务器验收。[完整超时、兼容和验收边界](docs/NODE_RECOVERY_RELEASE.md)。
+Node REST/RPyC 方法、认证、字段及健康/设备策略线协议不变；没有新端口、数据库迁移、UI/HWID/UDP/核心变化。已配对 Node/scripts 无需本轮更新；主控镜像已发布：源 `122632c8`、Actions `37340574125`、双架构 OCI revision 核对通过。本地两轮 95/95 与 Linux 95/95 通过，服务器部署/验收未执行。[镜像摘要、完整超时、兼容和验收边界](docs/NODE_RECOVERY_RELEASE.md)。
 
 ## MR-20261003-DONATION-LINK：Fork 捐赠入口
 

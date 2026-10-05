@@ -1,8 +1,8 @@
 # MR-20261006-NODE-RECOVERY：节点连接恢复检查
 
-维护者：Mr.shaw。2026-10-06（Asia/Hong_Kong）本地完成；尚未提交、推送、运行本轮 Actions、发布镜像或执行服务器验收。下述测试不代表生产网络已恢复，旧发布记录的摘要不能作为本轮镜像证据。
+维护者：Mr.shaw。本地与 Linux CI 已通过，修复已合入 master，主控新镜像已发布并核对；服务器部署与真实网络验收待完成。保留既有登记编号 MR-20261006-NODE-RECOVERY；实际上传时间以 Actions 的 `2026-10-05T16:33:03Z`（UTC）证据为准。本地测试、代码推送、Actions、镜像和服务器验收分别登记，旧发布摘要不能作为本轮证据。
 
-2026-10-06 已获维护者授权同步线上仓库并构建。先通过修复分支/PR 合入 master，再核对 Actions 和实际新镜像；发布证据核对后补充本文件，不提前标记服务器验收通过。
+已按维护者授权通过修复分支/PR 合入 master 并完成本轮构建。下列证据来自实际 Actions 和 GHCR index、manifest、config 原始字节校验，不提前标记服务器验收通过。
 
 ## 证据和修复范围
 
@@ -29,7 +29,7 @@
 | `POST /api/node/{node_id}/reconnect` | 原 sudo-admin 权限和异步响应 `{"detail":"Reconnection task scheduled"}`；200 表示接受任务，不代表成功连接，重复进行中的任务可以合并 |
 | `PUT /api/node/{node_id}`、`DELETE /api/node/{node_id}` | 请求/响应/权限不变；数据库和 transport 改变与恢复任务使用同一生命周期锁 |
 | Node REST、RPyC、健康/设备策略通道 | 无线协议、方法、字段或认证变更；原版与配对 Node 兼容测试通过，既有新出口能力要求不变 |
-| `kissow/Marzban` | 本地代码已修复，部署本轮修改前需要新的主控镜像；本轮尚未发布 |
+| `kissow/Marzban` | 新主控镜像已发布，源 `122632c8`；服务器需维护者备份后更新与验收 |
 | `kissow/Marzban-node` | 无服务端代码或协议变化；已配对 Node 不需本轮构建/服务器更新 |
 | `kissow/Marzban-scripts` | 无安装/更新命令或运行时变化；无需本轮构建/更新 |
 
@@ -46,10 +46,32 @@
 ## 发布与服务器验收闸门
 
 - [x] 本地修复、重复回归、兼容边界与接口文档登记。
-- [ ] 本轮源提交/推送：未执行。
-- [ ] 本轮 Actions、双架构镜像摘要和 OCI revision：未执行、无新证据。
+- [x] 本轮源提交/推送：修复 `a59cbff1c125642723499167d2e9101458fad196`，PR #10 合并源 `122632c8df4b57c43706cb59fb183e7386004ce1`。
+- [x] 本轮 Actions、双架构镜像摘要和 OCI revision：分支 `37340492999` 与 master `37340574125` 均成功，以下新摘要已核对。
 - [ ] 服务器更新与真实网络验收：未执行。
 
-获得发布授权后按 RELEASE_CHECKLIST 和 REPOSITORY_UPDATE_FLOW 记录本轮源/Actions/新镜像证据，再提供服务器更新步骤；不能以当前 latest 的历史镜像宣称部署本轮代码。更新前保留数据库、环境、证书、配置、数据卷及实际旧镜像摘要，不 reinstall、不删卷。
+### 本轮公开发布证据
+
+- PR：https://github.com/kissow/Marzban/pull/10 ，已合并。
+- master Actions：https://github.com/kissow/Marzban/actions/runs/37340574125 ，首次成功。Linux 后端 95/95、TypeScript/Vite、固定 Xray 闸门及 amd64/arm64 构建上传通过。
+- 镜像：`ghcr.io/kissow/marzban:latest`；OCI revision 为 `122632c8df4b57c43706cb59fb183e7386004ce1`。
+- OCI index：`sha256:ecbe03895e28c1dd7d9441907f967b1806f105e00e01d4dc36232bf7f39bb42b`。
+- linux/amd64 manifest：`sha256:f72f6429f480d141b80f66d3a5e13e431f8b569fee5733650bbe4c5018b86786`；config：`sha256:d9a0b33a1ff5c177f4f4d719202e4d44ea8545c4683164acc84fd9d8aa5d1bde`。
+- linux/arm64 manifest：`sha256:781f6083f100c86eb3016b52d7d2fb5ba30eacf36ef538352e14be6501074682`；config：`sha256:ee0567bcf78231f5e9e837e906a202985bb4a79d48b89bb8ddecb0496babb9e5`。
+- 两架构 config 的 OCI revision 均与上述源一致；registry 原始字节 SHA-256 与描述符一致；核对前后 latest index 未变化，并与 Actions 上传日志一致。
+- 后续发布证据回写仅改文档，使用 `[skip ci]`，不重建本镜像；仓库文档提交与镜像运行时代码源须分别识别。
+- 未执行镜像本地启动、服务器更新或生产故障注入；本轮不标记为稳定发布。已配对 Node/scripts 不需本轮构建或服务器更新。
+
+### 已切换 Fork 的服务器更新
+
+先备份数据库、`.env`、证书、Xray 配置、挂载数据并记录服务器当前实际镜像 digest，再在主控服务器执行：
+
+```sh
+marzban update
+marzban status
+marzban logs --no-follow 2>&1 | tail -n 100
+```
+
+更新后核对实际容器 `org.opencontainers.image.revision` 为 `122632c8df4b57c43706cb59fb183e7386004ce1`，再执行下列验收。不要因原容器名不同而删除旧容器/数据；不 reinstall，不删卷，不覆盖证书或环境。Node 本轮无需更新。可回退候选为上一主控镜像 `ghcr.io/kissow/marzban@sha256:9d3b20eba4e19994df9f5170f8ef3a5eaa81c3f846ab12e5f486f2c287bc2880`（源 `78e7b8e`）；实际回滚优先使用更新前记录的服务器旧 digest，备份不得删除。
 
 部署后用隔离节点验证：正常初连和原版重连；控制端口/TLS 不可达；API 端口不监听；修复后自动恢复；连续重连；多个节点中单个异常；修改/禁用/删除时状态；实际订阅和应用访问。核对 error 的具体 message，不允许长期无原因 connecting。API readiness 成功只是管理连接验收，还需验证用户访问。不要在已有用户的生产节点上制造断网故障。
