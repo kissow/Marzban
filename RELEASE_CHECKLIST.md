@@ -1,14 +1,14 @@
 # Marzban 主面板发布清单
 
-## MR-20261006-CONTROL-RESILIENCE（本地完成，未发布）
+## MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 
 - [x] 主控会话保留、只读有限重试、健康退避/并行、多用户同步和流量/日志隔离；无 UI/数据/端口/证书/HWID/Xray 修改。
 - [x] 最终同一运行时代码完整回归两轮 116/116；20 项韧性及 13 项真实传输各再连续三轮；compileall、pip check、固定入口 Check/diff 通过。
 - [x] README/FORK_FEATURES/CHANGELOG/接口/更新流程及工作区 05/08/09 更新，Node/scripts 明确无变化。
-- [ ] 用户授权后的推送、干净 Linux CI、本轮新镜像 digest/双架构 OCI revision 核对。
+- [x] 用户授权后的推送、PR #12 合入 `eb43761e`；正式 Actions `37486719383` 成功，本轮新镜像 index/双架构 manifest/config/OCI revision 核对。
 - [ ] 升级前备份、主控更新、本轮运行 revision 核对与至少 30 分钟真实网络/客户端验收。
 
-当前 `marzban update` 不会安装未发布的本地修改；不得沿用下方历史镜像证据。[复核记录与验收标准](docs/NODE_CONTROL_RESILIENCE.md)。
+已切换 Fork 的主控可用 `marzban update` 获取本修复；Node/scripts 不需本轮更新。镜像已发布不等于服务器已更新或链路稳定；证据回写为仅文档 `[skip ci]`，不改变已验证运行时 revision。[精确摘要、SSH 命令与验收标准](docs/NODE_CONTROL_RESILIENCE.md)。
 
 ## MR-DASHBOARD-I18N-MOBILE（镜像已发布，服务器/视觉验收待完成）
 
