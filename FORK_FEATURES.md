@@ -1,8 +1,8 @@
 # Marzban 开源扩展功能
 
-## MR-20261007-BROWSER-TRANSLATION（本地修复，未发布）
+## MR-20261007-BROWSER-TRANSLATION（镜像已发布，服务器验收待完成）
 
-HTML/body 浏览器翻译保护覆盖 React 根与 Chakra Portal；主机设置的加载/空列表文字由原 Text 组件包裹，避免外部翻译替换文本后卸载崩溃。原主题、宽度、表单、四语言与所有配置保留；无 API/数据库/Node/scripts/Xray 变化。本地验证和上线验收分别登记，当前服务器不会获得未发布代码。[详细记录](docs/BROWSER_TRANSLATION.md)。
+HTML/body 浏览器翻译保护覆盖 React 根与 Chakra Portal；主机设置的加载/空列表文字由原 Text 组件包裹，避免外部翻译替换文本后卸载崩溃。原主题、宽度、表单、四语言与所有配置保留；无 API/数据库/Node/scripts/Xray 变化。PR #14 / 96599563 合入、正式 Actions 37494615636 成功，latest 双架构摘要/revision 已核对；既有 Fork 主控 marzban update 后重新加载页面，Node 无需更新。服务器和实际翻译服务验收仍待用户执行。[详细记录](docs/BROWSER_TRANSLATION.md)。
 
 ## MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 
