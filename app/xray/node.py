@@ -19,7 +19,10 @@ from websocket import WebSocketConnectionClosedException, WebSocketTimeoutExcept
 from app.xray.config import XRayConfig
 from xray_api import XRay as XRayAPI
 
-NODE_CONNECT_TIMEOUT = 5
+NODE_CONNECT_TIMEOUT = 15
+NODE_CONTROL_TIMEOUT = (10, 10)  # TCP/TLS connection, then response read
+NODE_API_READY_TIMEOUT = 10
+NODE_READ_ONLY_PATHS = frozenset(("/", "/ping", "/health", "/device-activity"))
 
 
 def string_to_temp_file(content: str):
@@ -102,34 +105,57 @@ class ReSTXRayNode:
 
         return config
 
-    def make_request(self, path: str, timeout: int, **params):
-        try:
-            res = self.session.post(self._rest_api_url + path, timeout=timeout,
-                                    json={"session_id": self._session_id, **params})
-            data = res.json()
-        except Exception as e:
-            exc = NodeAPIError(0, str(e))
-            raise exc
+    def make_request(self, path: str, timeout=NODE_CONTROL_TIMEOUT, **params):
+        # These POST routes are read-only in both old and new Nodes. Never
+        # replay /connect, /start, /restart or policy writes after an ambiguous
+        # response timeout: the remote mutation may already have succeeded.
+        attempts = 2 if path in NODE_READ_ONLY_PATHS else 1
+        for attempt in range(attempts):
+            try:
+                res = self.session.post(self._rest_api_url + path, timeout=timeout,
+                                        json={"session_id": self._session_id, **params})
+                data = res.json()
+                break
+            except requests.exceptions.SSLError as exc:
+                raise NodeAPIError(0, f"{path} TLS verification/transport: {exc}") from exc
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
+                if attempt + 1 < attempts:
+                    continue
+                raise NodeAPIError(0, f"{path} control request: {exc}") from exc
+            except Exception as exc:
+                raise NodeAPIError(0, f"{path} invalid control response: {exc}") from exc
 
         if res.status_code == 200:
             return data
         else:
-            exc = NodeAPIError(res.status_code, data['detail'])
+            exc = NodeAPIError(res.status_code, data.get('detail', f'HTTP {res.status_code}'))
             raise exc
 
-    @property
-    def connected(self):
+    def _check_session(self):
         if not self._session_id:
             return False
         try:
-            self.make_request("/ping", timeout=3)
+            self.make_request("/ping")
             return True
+        except NodeAPIError as exc:
+            if exc.status_code == 403 and exc.detail == "Session ID mismatch.":
+                self._session_id = None
+                self._api = None
+                self._started = False
+                return False
+            # A timeout is not evidence that the authenticated session expired.
+            raise
+
+    @property
+    def connected(self):
+        try:
+            return self._check_session()
         except NodeAPIError:
             return False
 
     @property
     def started(self):
-        res = self.make_request("/", timeout=3)
+        res = self.make_request("/")
         return res.get('started', False)
 
     @property
@@ -151,26 +177,31 @@ class ReSTXRayNode:
         return self._api
 
     def connect(self):
+        if self._session_id:
+            # /connect on an already connected Node stops its running core.
+            # Reuse a valid session; propagate transient errors without takeover.
+            if self._check_session():
+                return
         self._node_cert = ssl.get_server_certificate((self.address, self.port), timeout=NODE_CONNECT_TIMEOUT)
         self._node_certfile = string_to_temp_file(self._node_cert)
         self.session.verify = self._node_certfile.name
 
-        res = self.make_request("/connect", timeout=3)
+        res = self.make_request("/connect")
         self._session_id = res['session_id']
 
     def disconnect(self):
-        self.make_request("/disconnect", timeout=3)
+        self.make_request("/disconnect")
         self._session_id = None
 
     def get_version(self):
-        res = self.make_request("/", timeout=3)
+        res = self.make_request("/")
         return res.get('core_version')
 
     def get_health(self):
         if not self._session_id:
             raise ConnectionError("Node is not connected")
         try:
-            return self.make_request("/health", timeout=3)
+            return self.make_request("/health")
         except NodeAPIError as exc:
             if exc.status_code == 404:
                 raise NotImplementedError("Node does not support health metrics") from exc
@@ -181,7 +212,7 @@ class ReSTXRayNode:
         if not self._session_id:
             raise ConnectionError("Node is not connected")
         try:
-            return self.make_request("/device-activity", timeout=3)
+            return self.make_request("/device-activity")
         except NodeAPIError as exc:
             if exc.status_code in (404, 405, 501):
                 return None
@@ -192,7 +223,7 @@ class ReSTXRayNode:
         if not self._session_id:
             raise ConnectionError("Node is not connected")
         try:
-            return self.make_request("/device-policies", timeout=5, policies=policies)
+            return self.make_request("/device-policies", policies=policies)
         except NodeAPIError as exc:
             if exc.status_code in (404, 405, 501):
                 return None
@@ -209,7 +240,9 @@ class ReSTXRayNode:
             res = self.make_request("/start", timeout=10, config=json_config)
         except NodeAPIError as exc:
             if exc.detail == 'Xray is started already':
-                return self.restart(config)
+                # This also recovers a successful /start whose response was
+                # lost. An explicit configuration restart uses /restart.
+                res = {"started": True}
             else:
                 raise exc
 
@@ -223,9 +256,9 @@ class ReSTXRayNode:
         )
 
         try:
-            grpc.channel_ready_future(self._api._channel).result(timeout=5)
+            grpc.channel_ready_future(self._api._channel).result(timeout=NODE_API_READY_TIMEOUT)
         except grpc.FutureTimeoutError:
-            raise ConnectionError(f"Node Xray API port {self.api_port} not ready after 5s; check its listener and firewall")
+            raise ConnectionError(f"Node Xray API port {self.api_port} not ready after {NODE_API_READY_TIMEOUT}s; check its listener and firewall")
 
         return res
 
@@ -233,7 +266,7 @@ class ReSTXRayNode:
         if not self.connected:
             self.connect()
 
-        self.make_request('/stop', timeout=5)
+        self.make_request('/stop')
         self._api = None
         self._started = False
 
@@ -256,9 +289,9 @@ class ReSTXRayNode:
         )
 
         try:
-            grpc.channel_ready_future(self._api._channel).result(timeout=5)
+            grpc.channel_ready_future(self._api._channel).result(timeout=NODE_API_READY_TIMEOUT)
         except grpc.FutureTimeoutError:
-            raise ConnectionError(f"Node Xray API port {self.api_port} not ready after 5s; check its listener and firewall")
+            raise ConnectionError(f"Node Xray API port {self.api_port} not ready after {NODE_API_READY_TIMEOUT}s; check its listener and firewall")
 
         return res
 
@@ -412,7 +445,7 @@ class RPyCXRayNode:
         try:
             self.connection.ping()
             return (not self.connection.closed)
-        except (AttributeError, EOFError, TimeoutError):
+        except (AttributeError, EOFError):
             self.disconnect()
             return False
 

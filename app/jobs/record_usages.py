@@ -9,7 +9,7 @@ from sqlalchemy import and_, bindparam, insert, select, update
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.dml import Insert
 
-from app import scheduler, xray
+from app import logger, scheduler, xray
 from app.db import GetDB
 from app.db.models import Admin, NodeUsage, NodeUserUsage, System, User
 from config import (
@@ -132,9 +132,12 @@ def record_user_usages():
     usage_coefficient = {None: 1}  # default usage coefficient for the main api instance
 
     for node_id, node in list(xray.nodes.items()):
-        if node.connected and node.started:
-            api_instances[node_id] = node.api
-            usage_coefficient[node_id] = node.usage_coefficient  # fetch the usage coefficient
+        try:
+            if node.connected and node.started:
+                api_instances[node_id] = node.api
+                usage_coefficient[node_id] = node.usage_coefficient  # fetch the usage coefficient
+        except Exception as exc:
+            logger.warning("Skipping node %s usage probe: %s", node_id, exc)
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {node_id: executor.submit(get_users_stats, api) for node_id, api in api_instances.items()}
@@ -186,8 +189,11 @@ def record_user_usages():
 def record_node_usages():
     api_instances = {None: xray.api}
     for node_id, node in list(xray.nodes.items()):
-        if node.connected and node.started:
-            api_instances[node_id] = node.api
+        try:
+            if node.connected and node.started:
+                api_instances[node_id] = node.api
+        except Exception as exc:
+            logger.warning("Skipping node %s outbound usage probe: %s", node_id, exc)
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {node_id: executor.submit(get_outbounds_stats, api) for node_id, api in api_instances.items()}

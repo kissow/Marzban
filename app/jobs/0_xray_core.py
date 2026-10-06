@@ -1,5 +1,6 @@
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from app import app, logger, scheduler, xray
 from app.db import GetDB, crud
@@ -23,17 +24,25 @@ def core_health_check():
     # Include failed transport construction too, not only existing objects.
     with GetDB() as db:
         node_ids = [row.id for row in crud.get_nodes(db=db, enabled=True)]
-    for node_id in node_ids:
-        try:
-            action = xray.operations.check_node_health(node_id)
-            if action:
-                if config is None:
-                    config = xray.config.include_db_users()
-                operation = (xray.operations.restart_node if action == "restart"
-                             else xray.operations.connect_node)
-                operation(node_id, config, automatic=True)
-        except Exception:
-            logger.exception("Unable to check node %s", node_id)
+    if not node_ids:
+        return
+    # Slow TLS/control probes on one peer must not delay every other Node.
+    # Recovery mutations remain protected by the per-node lifecycle lock.
+    with ThreadPoolExecutor(max_workers=min(10, len(node_ids))) as executor:
+        futures = {executor.submit(xray.operations.check_node_health, node_id): node_id
+                   for node_id in node_ids}
+        for future in as_completed(futures):
+            node_id = futures[future]
+            try:
+                action = future.result()
+                if action:
+                    if config is None:
+                        config = xray.config.include_db_users()
+                    operation = (xray.operations.restart_node if action == "restart"
+                                 else xray.operations.connect_node)
+                    operation(node_id, config, automatic=True)
+            except Exception:
+                logger.exception("Unable to check node %s", node_id)
 
 
 @app.on_event("startup")

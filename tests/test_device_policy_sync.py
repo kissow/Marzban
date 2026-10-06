@@ -282,13 +282,15 @@ class NodeConnectionOrderTests(unittest.TestCase):
         self.run_connection()
         self.node.start.assert_not_called()
 
-    def test_rest_health_timeout_returns_restart_and_records_reason(self):
+    def test_rest_health_timeout_backs_off_without_restart_and_records_reason(self):
         self.runtime.nodes[1] = self.node
         self.node.connected = True
         type(self.node).started = property(lambda _: (_ for _ in ()).throw(TimeoutError('REST read timeout')))
         self.addCleanup(delattr, type(self.node), 'started')
-        self.assertEqual(operations.check_node_health(1), 'restart')
+        self.assertIsNone(operations.check_node_health(1))
         self.assertEqual(self.status.call_args.kwargs['message'], 'Health check: REST read timeout')
+        self.assertGreater(operations._node_retry_after[1], operations.monotonic())
+        self.node.restart.assert_not_called()
 
     def test_health_and_automatic_recovery_skip_failed_node_cooldown(self):
         operations._node_retry_after[1] = operations.monotonic() + 30

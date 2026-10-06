@@ -1,5 +1,7 @@
 # MR-20261006-NODE-RECOVERY：节点连接恢复检查
 
+> 历史发布记录：本文的旧阶段超时和健康恢复行为已被本地待发布的 [MR-20261006-CONTROL-RESILIENCE](NODE_CONTROL_RESILIENCE.md) 调整；新行为包括 TLS 15s 和健康异常不盲目重启。两份记录的提交、测试与镜像证据必须分别使用，不表示新修复已发布。
+
 维护者：Mr.shaw。本地与 Linux CI 已通过，修复已合入 master，主控新镜像已发布并核对；服务器部署与真实网络验收待完成。保留既有登记编号 MR-20261006-NODE-RECOVERY；实际上传时间以 Actions 的 `2026-10-05T16:33:03Z`（UTC）证据为准。本地测试、代码推送、Actions、镜像和服务器验收分别登记，旧发布摘要不能作为本轮证据。
 
 已按维护者授权通过修复分支/PR 合入 master 并完成本轮构建。下列证据来自实际 Actions 和 GHCR index、manifest、config 原始字节校验，不提前标记服务器验收通过。

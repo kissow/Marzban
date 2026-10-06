@@ -1,5 +1,9 @@
 # Mr.shaw 扩展接口与更新规范
 
+## MR-20261006-CONTROL-RESILIENCE（本地测试完成，未发布）
+
+不新增接口、字段、迁移或端口。原 `/api/nodes`、`/api/node/{node_id}` 的 status/message 和异步 `POST /api/node/{node_id}/reconnect` 合同保留，受理不等于连通；日志控制探测异常使用既有关闭码 4400。Node 认证通道不变：仅 `/`、`/ping`、`/health`、`/device-activity` 在网络异常后最多再读一次；改变状态的请求不立即重放。精确 403 Session mismatch 才清除 session。TLS 15s、REST 连接/读取各 10s、REST API 就绪 10s、健康统计 5s、失败退避 30s 均为阶段参数，非全流程硬期限。HWID/订阅合同和正式 Xray v26.3.27 不变。Node/scripts 无变化，只需未来主控新镜像。[完整接口合同、两轮 116/116 及上线验收](docs/NODE_CONTROL_RESILIENCE.md)。
+
 ## MR-DASHBOARD-I18N-MOBILE：展示层修复，接口不变（镜像已发布，服务器/视觉验收待完成）
 
 `GET /api/users` status 查询仍用 `active/on_hold/disabled/limited/expired`，只翻译显示文案。`GET /api/hosts`、`PUT /api/hosts` 请求/响应/管理员权限及端口转换不变；必填提示只是前端本地化。无接口新增删除、认证变更或数据库迁移。Node REST/RPyC、健康/设备策略协议及部署命令不变，Node/scripts 不需本轮更新；Xray v26.3.27 不变。

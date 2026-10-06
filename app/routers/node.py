@@ -197,8 +197,12 @@ async def node_logs(node_id: int, websocket: WebSocket, db: Session = Depends(ge
     if not xray.nodes.get(node_id):
         return await websocket.close(reason="Node not found", code=4404)
 
-    if not xray.nodes[node_id].connected:
-        return await websocket.close(reason="Node is not connected", code=4400)
+    try:
+        if not xray.nodes[node_id].connected:
+            return await websocket.close(reason="Node is not connected", code=4400)
+    except Exception:
+        logger.warning("Node %s log control probe failed", node_id, exc_info=True)
+        return await websocket.close(reason="Node control channel is unavailable", code=4400)
 
     interval = websocket.query_params.get("interval")
     if interval:
