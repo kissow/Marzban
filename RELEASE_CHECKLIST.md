@@ -1,15 +1,16 @@
 # Marzban 主面板发布清单
 
-## MR-20261007-BROWSER-TRANSLATION（本地修复，未发布）
+## MR-20261007-BROWSER-TRANSLATION（镜像已发布，服务器验收待完成）
 
 - [x] 只修改原 HTML 翻译声明及 HostsDialog 动态文本包装；主题/宽度/表单/协议保留，无全局 DOM 异常吞掉补丁。
 - [x] 前端语言与翻译保护回归 40/40，TypeScript 与生产构建通过；PR CI 加入同一测试命令。
 - [x] 固定项目入口完整后端 116/116 与 Check/diff 通过；现有弃用提示保留，后端无修改。
 - [x] 原组件浏览器模拟文本替换后状态切换/开关 10 轮，四语言及 1280px/390px 宽度/截图核对通过；无 pageerror/removeChild，保留已有开发嵌套按钮警告，非实际线上翻译验收。
 - [x] README/功能/更新/API/流程及工作区 05/08/09 同步；Node/scripts 明确无变化。
-- [ ] 推送、Actions、新主控镜像 digest/双架构 revision、服务器更新及真实浏览器翻译验收。
+- [x] 修复上传并经 PR #14 合入 96599563；PR CI 37494129629、正式 Actions 37494615636 成功；latest index/双架构 manifest/config/revision 已核对。
+- [ ] 服务器更新、本轮运行 revision 核对及真实浏览器翻译验收；发布不等于部署/验收。
 
-[详细记录](docs/BROWSER_TRANSLATION.md)。历史镜像不包含本轮未发布修复。
+[详细记录和 SSH 更新命令](docs/BROWSER_TRANSLATION.md)。本轮修复镜像已发布，Node 不需更新；仅文档回写 [skip ci] 不改变运行时 revision。历史镜像不代替本轮摘要。
 
 ## MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 

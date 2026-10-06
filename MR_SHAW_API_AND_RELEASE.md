@@ -1,8 +1,8 @@
 # Mr.shaw 扩展接口与更新规范
 
-## MR-20261007-BROWSER-TRANSLATION（展示兼容，本地修复、未发布）
+## MR-20261007-BROWSER-TRANSLATION（展示兼容，镜像已发布、服务器待验收）
 
-无接口、字段、认证、迁移、命令新增/删除。原 GET /api/hosts、PUT /api/hosts 及 GET /api/inbounds 的请求/响应/权限不变；只保护浏览器 DOM 和包装两个动态状态文本。Node REST/RPyC/HWID/UDP 与正式 Xray v26.3.27 不变；Node/scripts 不需配对更新。未来主控镜像发布后使用既有 marzban update；当前不能获得未发布代码。面板原语言菜单保留。[源码、测试和上线验收边界](docs/BROWSER_TRANSLATION.md)。
+无接口、字段、认证、迁移、命令新增/删除。原 GET /api/hosts、PUT /api/hosts 及 GET /api/inbounds 的请求/响应/权限不变；只保护浏览器 DOM 和包装两个动态状态文本。Node REST/RPyC/HWID/UDP 与正式 Xray v26.3.27 不变；Node/scripts 不需配对更新。PR #14 合入 96599563、正式 Actions 37494615636 成功，latest 双架构摘要/OCI revision 已核对。既有 Fork 主控使用 marzban update 后重新加载页面；面板原语言菜单保留，服务器验收待执行。[源码、测试、精确摘要和上线验收边界](docs/BROWSER_TRANSLATION.md)。
 
 ## MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 

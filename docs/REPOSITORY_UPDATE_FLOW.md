@@ -1,8 +1,8 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
-## MR-20261007-BROWSER-TRANSLATION（本地修复，未发布）
+## MR-20261007-BROWSER-TRANSLATION（镜像已发布，服务器验收待完成）
 
-浏览器翻译 opt-out 与原 HostsDialog 动态状态文本包装；原主题、宽度、四语言和表单保留。主控 hosts/inbounds API、数据、证书、端口、Node 协议、HWID/UDP、Xray v26.3.27 不变，Node/scripts 无本轮运行时或命令变化。前端 40/40、TypeScript/生产构建通过；推送/Actions/镜像/服务器验收待执行，不能用历史发布摘要代替。[本轮证据和范围](BROWSER_TRANSLATION.md)。
+浏览器翻译 opt-out 与原 HostsDialog 动态状态文本包装；原主题、宽度、四语言和表单保留。主控 hosts/inbounds API、数据、证书、端口、Node 协议、HWID/UDP、Xray v26.3.27 不变，Node/scripts 无本轮运行时或命令变化。本地/干净 Linux 前端 40/40、后端 116/116、TypeScript/生产构建通过；PR #14 合入 96599563、正式 Actions 37494615636 成功，latest index/双架构 OCI revision 已核对。服务器验收待执行，不能用历史发布摘要代替；仅文档 [skip ci] 回写不重建镜像。[本轮精确证据和范围](BROWSER_TRANSLATION.md)。
 
 ## MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 
