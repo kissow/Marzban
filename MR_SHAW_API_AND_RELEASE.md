@@ -1,5 +1,9 @@
 # Mr.shaw 扩展接口与更新规范
 
+## MR-20261007-BROWSER-TRANSLATION（展示兼容，本地修复、未发布）
+
+无接口、字段、认证、迁移、命令新增/删除。原 GET /api/hosts、PUT /api/hosts 及 GET /api/inbounds 的请求/响应/权限不变；只保护浏览器 DOM 和包装两个动态状态文本。Node REST/RPyC/HWID/UDP 与正式 Xray v26.3.27 不变；Node/scripts 不需配对更新。未来主控镜像发布后使用既有 marzban update；当前不能获得未发布代码。面板原语言菜单保留。[源码、测试和上线验收边界](docs/BROWSER_TRANSLATION.md)。
+
 ## MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 
 不新增接口、字段、迁移或端口。原 `/api/nodes`、`/api/node/{node_id}` 的 status/message 和异步 `POST /api/node/{node_id}/reconnect` 合同保留，受理不等于连通；日志控制探测异常使用既有关闭码 4400。Node 认证通道不变：仅 `/`、`/ping`、`/health`、`/device-activity` 在网络异常后最多再读一次；改变状态的请求不立即重放。精确 403 Session mismatch 才清除 session。TLS 15s、REST 连接/读取各 10s、REST API 就绪 10s、健康统计 5s、失败退避 30s 均为阶段参数，非全流程硬期限。HWID/订阅合同和正式 Xray v26.3.27 不变。Node/scripts 无变化；新主控镜像已发布，既有 Fork 执行 `marzban update`。PR #12 / `eb43761e` / Actions `37486719383` 与双架构摘要已核对，服务器验收待执行。[完整接口合同、发布证据及上线验收](docs/NODE_CONTROL_RESILIENCE.md)。

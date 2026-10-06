@@ -1,5 +1,13 @@
 # Mr.shaw Marzban Fork 更新记录
 
+## 2026-10-07 — MR-20261007-BROWSER-TRANSLATION（本地修复，未发布）
+
+- 用户确认浏览器翻译开启时，主机设置/入站出现 React removeChild DOM 异常。
+- HTML/body 增加 translate=no / notranslate，head 增加 Google 翻译 opt-out；保留原 i18next 四语言，覆盖 body-mounted Portal，而不只保护 root。
+- 原 HostsDialog 两个动态状态文字增加 Text as=span；不修改主题、宽度、协议、证书或字段，不覆写全局 DOM 方法吞掉错误。
+- 新增 6 项源码/生产 JSX 渲染回归，与原 34 项语言测试合并执行；PR 工作流增加同一测试闸门。类型与生产构建通过，真实原组件浏览器回归证据见专门记录。
+- API/数据库/Node/scripts/认证通道/设备策略/Xray v26.3.27 无变化；仅需未来主控镜像。没有推送/Actions/镜像/服务器验收证据，不沿用上轮镜像。[原因、边界与验收](docs/BROWSER_TRANSLATION.md)。
+
 ## 2026-10-06 — MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 
 - 证实 Node `/connect` 对已有会话有停核心副作用；修复主控短暂 ping 超时后的会话接管风险，不把网络波动当作 HWID 拒绝。
