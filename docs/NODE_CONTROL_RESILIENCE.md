@@ -1,8 +1,8 @@
 # MR-20261006-CONTROL-RESILIENCE：慢链路与会话恢复
 
-状态：2026-10-06 本地修复和复核完成；未推送、未运行本轮 Linux CI、未发布本轮镜像、未进行服务器验收。下方测试不能作为线上连接已稳定的证明。
+状态：2026-10-06 修复已推送并经 PR #12 合入 master，正式 Linux Actions 成功，新镜像 latest 双架构摘要/OCI revision 已核对；服务器部署和真实网络验收待用户执行。下方测试不能作为线上连接已稳定的证明。
 
-2026-10-06 用户已授权推送线上仓库、构建新镜像并提供 SSH 更新命令。发布完成后回写本轮源提交、PR、Actions 和 GHCR 证据；服务器仍由用户更新并验收，不沿用旧发布证据。
+2026-10-06 按用户授权推送线上仓库、构建新镜像并提供 SSH 更新命令。下方登记本轮源提交、PR、Actions 和 GHCR 证据；仅文档回写使用 `[skip ci]`，不重建已核对的运行时镜像。服务器仍由用户更新并验收，不沿用旧发布证据。
 
 ## 1. 问题与已核对的原因
 
@@ -37,7 +37,7 @@
 | Marzban-node / Marzban-scripts | 本轮运行时代码、接口与命令无变化，不需为本修复单独更新或构建 |
 | Xray | 正式基线仍为 v26.3.27；本轮不升级或更换核心 |
 
-主控发布新镜像后才会包含本修复。历史镜像 revision、Actions 和 digest 均不是本轮的发布证据。源码依据来自本项目及上游保留的 Node 会话语义，本轮没有复制第三方新代码。
+本轮已发布的新主控镜像包含本修复；历史镜像 revision、Actions 和 digest 均不是本轮的发布证据。源码依据来自本项目及上游保留的 Node 会话语义，本轮没有复制第三方新代码。
 
 ## 4. 本地检测证据（2026-10-06）
 
@@ -50,12 +50,35 @@
 - 复核修正了流量异常分支缺少 logger 导入，新增生产导入与日志路由异常测试；测试夹具的 session 初始值、Mock 断言及 Windows 证书探测关闭处理已修正。未把测试失败登记成产品通过。
 - 已有 UTC/Pydantic 弃用提示仍需另行维护，不是本次 TLS 故障；不因此宣称所有代码已无问题。无前端运行时变更，不用重新设计 UI。
 
-## 5. 发布与服务器验收（待授权、待执行）
+## 5. 已核对的发布证据（2026-10-06）
 
-1. 先复核本轮代码/文档，推送并完成干净 Linux CI；登记本轮源提交、Actions run、两架构 manifest/config、OCI revision 及 latest digest。
-2. 确认服务器已切换到本 Fork，再使用 `marzban update`；保留升级前备份。未发布前运行这个命令不会获得本地修复。禁止重装、删除数据卷或覆盖 .env。
+- 修复源提交：`d3d768d07e4bc94584f03d4256b87e00fef595c1`。
+- PR：[#12](https://github.com/kissow/Marzban/pull/12)；PR CI `37486329103` 成功。
+- 合入 master / 运行时 OCI revision：`eb43761ebcea3e62d550621982a6442cfbcddf62`。
+- 正式构建：[Actions 37486719383](https://github.com/kissow/Marzban/actions/runs/37486719383)，完成时间 `2026-10-06T15:31:59Z`；后端检查、前端检查/构建、Xray pin 和镜像发布全部成功。
+- 镜像：`ghcr.io/kissow/marzban:latest`；index `sha256:569aa43f94fdfc7711a05c20c2e498c782ac625cd0e7e38b64503788ab1fbbcb`。
+- linux/amd64 manifest：`sha256:ca3dc61809124339f26922908b115c321fdeb5c24ce5e5ddeb35525126e4a58d`；config `sha256:e5664b41bb02646260f7b6c82a41672f51e503f990a80665225fb7721556f15e`。
+- linux/arm64 manifest：`sha256:889d8f6acd1b548431fbfd054b541356aaecfc4ef33a5afe4ca6ae7703bbef07`；config `sha256:bf3d72427bfc6eb32af3086c99eb922e8e9bf1e1e3666785f14e293ce5f8171d`。
+- 核验时间 `2026-10-06T23:34:29+08:00`：index/manifest/config 原始字节 SHA256 与声明一致，两架构 revision 均匹配合入提交，验证前后 latest 未变化。
+- Node/scripts 无本轮运行时/协议/命令变化，无需重复构建或服务器更新；Xray 正式基线仍为 `v26.3.27`。
+
+## 6. SSH 更新与服务器验收（待用户执行）
+
+以下命令在已切换 Fork 的主控服务器执行；保留更新脚本生成的升级前备份，不重装、不删除卷、不覆盖 `.env`。拉取镜像可能耗时数分钟，更新过程中会短暂重启服务。
+
+```sh
+marzban update
+marzban status
+marzban logs --no-follow 2>&1 | tail -n 100
+docker ps --filter label=com.docker.compose.service=marzban --format '{{.ID}}' | xargs -r docker inspect --format '{{.Name}} | {{.Config.Image}} | {{index .Config.Labels "org.opencontainers.image.revision"}}'
+```
+
+期望运行镜像为 `ghcr.io/kissow/marzban:latest`，revision 为 `eb43761ebcea3e62d550621982a6442cfbcddf62`。后续仅文档提交 SHA 不应替代本运行时 revision。
+
+1. 推送、干净 Linux CI 及双架构发布核验已完成；服务器还未由本轮工具远程更新或验收。
+2. 确认服务器已切换到本 Fork，再使用 `marzban update`；保留升级前备份。禁止重装、删除数据卷或覆盖 .env。
 3. 核对运行镜像的本轮 revision、Xray v26.3.27、两个 Node 的控制/API 端口、证书和用户数据。
 4. 在隔离测试节点模拟控制延迟/断连：超时必须显示真实阶段原因；不得因一次健康读取失败触发会话接管或运行核心重启；另一个健康节点继续采集/恢复。
 5. 恢复网络后观察 API 迟到恢复；Node 服务重启产生明确 Session mismatch 时，允许重新建会话并同步策略/账号。不要在有用户的正式节点强制断网验证。
 6. 控制与 API 稳定观察至少 30 分钟；实际手机/桌面客户端流量、账号和订阅可用；证书/认证错误仍被拒绝。若持续失败，继续检查服务响应、网络路径、防火墙及 API 就绪情况，不能把提高期限当作网络已修好。
-7. 只有实际验收证据齐全才标记服务器通过；这份记录当前不表示已发布或已部署。
+7. 只有实际验收证据齐全才标记服务器通过；这份记录表示镜像已发布，不表示服务器已部署或网络已稳定。

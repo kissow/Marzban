@@ -1,13 +1,14 @@
 # Mr.shaw Marzban Fork 更新记录
 
-## 2026-10-06 — MR-20261006-CONTROL-RESILIENCE（本地测试完成，未推送/发布/部署）
+## 2026-10-06 — MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 
 - 证实 Node `/connect` 对已有会话有停核心副作用；修复主控短暂 ping 超时后的会话接管风险，不把网络波动当作 HWID 拒绝。
 - TLS 证书阶段 15s；REST 默认连接/读取各 10s、确认只读请求最多两次；API 就绪 10s、健康统计 5s。期限不是全流程硬截止；变更请求不立即重放，认证/证书错误不绕过。
 - API/控制不确定失败按原原因退避 30s，不盲目重启；已启动核心检查 API、已停止核心走 start，管理员明确配置重启保留。
 - 健康探测并行；账号同步每批单快照、互斥/异常隔离；流量与日志入口隔离控制探测异常。复核发现并修正 logger 导入遗漏，补回归防复发。
 - 最终相同运行时代码完整回归两轮 116/116；20 项韧性和 13 项真实 TLS/mTLS/恢复测试各再复跑三轮；compileall、pip check、Check/diff 通过。测试夹具适配失败已修正，不冒充生产失败或通过证据。
-- API/schema/UI/证书/端口/数据/HWID/Xray 不变；Node/scripts 无运行时代码变化。本轮无新提交/CI/镜像/服务器验收证据。[详情](docs/NODE_CONTROL_RESILIENCE.md)。
+- API/schema/UI/证书/端口/数据/HWID/Xray 不变；Node/scripts 无运行时代码变化。本轮只需更新主控。
+- 源 `d3d768d0`、PR #12、PR CI `37486329103`；合入 master `eb43761e`，正式 Actions `37486719383` 成功。latest index `sha256:569aa43f94fdfc7711a05c20c2e498c782ac625cd0e7e38b64503788ab1fbbcb`，两架构 manifest/config/revision 核对通过。服务器部署/验收待执行，后续仅文档 `[skip ci]` 不重建镜像。[完整证据与 SSH 命令](docs/NODE_CONTROL_RESILIENCE.md)。
 
 ## MR-DASHBOARD-I18N-MOBILE（镜像已发布，服务器/视觉验收待完成）
 

@@ -1,8 +1,10 @@
 # Marzban 开源扩展功能
 
-## MR-20261006-CONTROL-RESILIENCE（本地测试完成，未发布）
+## MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 
 修复慢控制链路被当作会话失效的问题：保留 session、只对精确 Session mismatch 重新认证；只读请求有限重试，变更请求不立即重放；不确定健康异常退避而不盲目重启核心。并行健康探测、单快照/互斥批量账号同步及流量/日志异常隔离，防止故障扩散到健康节点。两轮 116/116、专项 20/20 与真实传输 13/13 各连续复跑三轮通过。API/数据/UI/证书/端口/HWID/Xray v26.3.27 不变，Node/scripts 不需本轮更新。[接口期限、边界、证据与验收](docs/NODE_CONTROL_RESILIENCE.md)。
+
+PR #12 合入 `eb43761e`，正式 Actions `37486719383` 成功；GHCR latest index 与 amd64/arm64 OCI revision 已核对。已切换 Fork 的主控执行 `marzban update`；服务器部署与至少 30 分钟真实链路/客户端验收仍待用户执行。仅文档证据回写使用 `[skip ci]`，不改变已验证运行时镜像 revision。
 
 ## MR-DASHBOARD-I18N-MOBILE：多语言与手机入站弹窗（镜像已发布，服务器/视觉验收待完成）
 
