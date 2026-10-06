@@ -75,7 +75,7 @@ class NodeDeviceProtocolTests(unittest.TestCase):
         client._session_id = "session"
         client.make_request = Mock(return_value={"accepted": True})
         client.set_device_policies([])
-        client.make_request.assert_called_once_with("/device-policies", timeout=5, policies=[])
+        client.make_request.assert_called_once_with("/device-policies", policies=[])
         client.make_request.reset_mock()
         client.get_device_activity()
-        client.make_request.assert_called_once_with("/device-activity", timeout=3)
+        client.make_request.assert_called_once_with("/device-activity")

@@ -72,6 +72,7 @@ def add_user(dbuser: "DBUser"):
     if action == "reject_new":
         sync_user_device_accounts(dbuser)
         return
+    targets = _device_account_targets()
 
     for proxy_type, inbound_tags in user.inbounds.items():
         for inbound_tag in inbound_tags:
@@ -97,28 +98,23 @@ def add_user(dbuser: "DBUser"):
             ):
                 account.flow = XTLSFlows.NONE
 
-            _add_user_to_inbound(xray.api, inbound_tag, account)  # main core
-            for node in list(xray.nodes.values()):
-                if node.connected and node.started:
-                    _add_user_to_inbound(node.api, inbound_tag, account)
+            for api, _ in targets:
+                _add_user_to_inbound(api, inbound_tag, account)
 
-    sync_user_device_accounts(dbuser)
+    sync_user_device_accounts(dbuser, targets=targets)
 
 
 def remove_user(dbuser: "DBUser", device_emails=None):
     email = f"{dbuser.id}.{dbuser.username}"
     device_emails = device_emails or []
+    targets = _device_account_targets()
 
     for inbound_tag in xray.config.inbounds_by_tag:
-        _remove_user_from_inbound(xray.api, inbound_tag, email)
-        for node in list(xray.nodes.values()):
-            if node.connected and node.started:
-                _remove_user_from_inbound(node.api, inbound_tag, email)
+        for api, _ in targets:
+            _remove_user_from_inbound(api, inbound_tag, email)
         for device_email in device_emails:
-            _remove_user_from_inbound(xray.api, inbound_tag, f"{dbuser.id}.{dbuser.username}.{device_email}")
-            for node in list(xray.nodes.values()):
-                if node.connected and node.started:
-                    _remove_user_from_inbound(node.api, inbound_tag, f"{dbuser.id}.{dbuser.username}.{device_email}")
+            for api, _ in targets:
+                _remove_user_from_inbound(api, inbound_tag, f"{dbuser.id}.{dbuser.username}.{device_email}")
 
 
 def update_user(dbuser: "DBUser"):
@@ -127,6 +123,7 @@ def update_user(dbuser: "DBUser"):
     action = getattr(getattr(dbuser, "device_limit_action", None), "value",
                      getattr(dbuser, "device_limit_action", None))
 
+    targets = _device_account_targets()
     active_inbounds = []
     for proxy_type, inbound_tags in user.inbounds.items():
         for inbound_tag in inbound_tags:
@@ -155,24 +152,32 @@ def update_user(dbuser: "DBUser"):
             ):
                 account.flow = XTLSFlows.NONE
 
-            _alter_inbound_user(xray.api, inbound_tag, account)  # main core
-            for node in list(xray.nodes.values()):
-                if node.connected and node.started:
-                    _alter_inbound_user(node.api, inbound_tag, account)
+            for api, _ in targets:
+                _alter_inbound_user(api, inbound_tag, account)
 
     for inbound_tag in xray.config.inbounds_by_tag:
         if inbound_tag in active_inbounds:
             continue
         # remove disabled inbounds
-        _remove_user_from_inbound(xray.api, inbound_tag, email)
-        for node in list(xray.nodes.values()):
+        for api, _ in targets:
+            _remove_user_from_inbound(api, inbound_tag, email)
+
+    sync_user_device_accounts(dbuser, targets=targets)
+
+
+def _device_account_targets():
+    """Probe each Node once, isolating unavailable peers from healthy cores."""
+    targets = [(xray.api, "main")]
+    for node_id, node in list(xray.nodes.items()):
+        try:
             if node.connected and node.started:
-                _remove_user_from_inbound(node.api, inbound_tag, email)
+                targets.append((node.api, "node"))
+        except Exception as exc:
+            logger.warning("Skipping node %s account reconciliation: %s", node_id, exc)
+    return targets
 
-    sync_user_device_accounts(dbuser)
 
-
-def sync_user_device_accounts(dbuser: "DBUser"):
+def sync_user_device_accounts(dbuser: "DBUser", targets=None):
     """Sync shared compatibility accounts and registered HWID credentials."""
     user = UserResponse.model_validate(dbuser)
     base_email = f"{dbuser.id}.{dbuser.username}"
@@ -180,9 +185,8 @@ def sync_user_device_accounts(dbuser: "DBUser"):
                      getattr(dbuser, "device_limit_action", None))
     devices = [device for device in getattr(dbuser, "devices", [])
                if device.revoked_at is None and device.credentials]
-    targets = [(xray.api, "main")]
-    targets.extend((node.api, "node") for node in list(xray.nodes.values())
-                   if node.connected and node.started)
+    if targets is None:
+        targets = _device_account_targets()
 
     for proxy_type, inbound_tags in user.inbounds.items():
         base_settings = user.proxies.get(proxy_type)
@@ -342,15 +346,26 @@ def sync_all_node_device_policies():
             logger.warning("Unable to build node device policy snapshot", exc_info=True)
 
 
+_account_sync_lock = Lock()
+
+
 def sync_all_node_device_accounts():
     """Retry per-device Xray account reconciliation after transient failures."""
+    if not _account_sync_lock.acquire(blocking=False):
+        return
     try:
+        targets = _device_account_targets()
         with GetDB() as db:
             users = crud.get_users(db, status=[UserStatus.active, UserStatus.on_hold])
             for user in users:
-                sync_user_device_accounts(user)
+                try:
+                    sync_user_device_accounts(user, targets=targets)
+                except Exception:
+                    logger.warning("Unable to reconcile device accounts for user %s", user.id, exc_info=True)
     except Exception:
         logger.warning("Unable to reconcile device accounts", exc_info=True)
+    finally:
+        _account_sync_lock.release()
 
 
 def _change_node_status(node_id: int, status: NodeStatus, message: str = None, version: str = None):
@@ -485,8 +500,8 @@ def check_node_health(node_id):
         if node is None or not node.connected:
             return "connect"
         if not node.started:
-            raise ConnectionError("Node Xray core is not started")
-        node.api.get_sys_stats(timeout=2)
+            return "connect"
+        node.api.get_sys_stats(timeout=5)
         # A late-ready API can recover without another restart. Clear only a
         # stale failure/connecting state; do not rewrite healthy rows each tick.
         with GetDB() as db:
@@ -494,10 +509,15 @@ def check_node_health(node_id):
             if dbnode and dbnode.status in (NodeStatus.error, NodeStatus.connecting):
                 version = node.get_version() or dbnode.xray_version
                 _change_node_status(node_id, NodeStatus.connected, version=version)
+        _node_retry_after.pop(node_id, None)
     except Exception as exc:
         _change_node_status(node_id, NodeStatus.error, message=f"Health check: {exc}"[:2000])
         logger.warning("Node %s health check failed: %s", node_id, exc)
-        return "restart"
+        # A control/API timeout is not evidence that Xray has stopped. Keep
+        # serving users, back off, and re-probe; a confirmed stopped core or
+        # invalid session takes the explicit connect path on the next check.
+        _node_retry_after[node_id] = monotonic() + NODE_RETRY_DELAY
+        return None
     finally:
         lock.release()
 

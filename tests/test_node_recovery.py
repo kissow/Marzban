@@ -87,6 +87,7 @@ class NodeTransportRecoveryTests(unittest.TestCase):
 
     def test_real_rest_certificate_handshake_times_out(self):
         client = object.__new__(protocol.node.ReSTXRayNode)
+        client._session_id = None
         client.address, client.port = '127.0.0.1', self.stall_server()
         client.make_request = Mock()
         began = time.monotonic()
@@ -103,6 +104,47 @@ class NodeTransportRecoveryTests(unittest.TestCase):
             with self.assertRaises(TimeoutError):
                 client._connect_transport()
         self.assertLess(time.monotonic() - began, 1.5)
+
+    def test_real_delayed_tls_certificate_succeeds_with_bounded_tolerance(self):
+        listener = socket.socket()
+        listener.bind(('127.0.0.1', 0))
+        listener.listen()
+        listener.settimeout(2)
+        port = listener.getsockname()[1]
+        failures = []
+        def serve():
+            try:
+                with listener.accept()[0] as sock:
+                    time.sleep(0.2)
+                    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+                    context.load_cert_chain(self.cert, self.key)
+                    with context.wrap_socket(sock, server_side=True):
+                        pass
+            except (ConnectionAbortedError, ConnectionResetError, ssl.SSLEOFError):
+                # get_server_certificate closes immediately after the peer
+                # certificate; Windows may abort the server's TLS ticket write.
+                pass
+            except Exception as exc:
+                failures.append(exc)
+            finally:
+                listener.close()
+        worker = threading.Thread(target=serve, daemon=True)
+        worker.start()
+        self.addCleanup(worker.join, 3)
+        client = object.__new__(protocol.node.ReSTXRayNode)
+        client._session_id, client.session = None, Mock()
+        client.address, client.port = '127.0.0.1', port
+        client.make_request = Mock(return_value={'session_id': 'authenticated'})
+        with patch.object(protocol.node, 'NODE_CONNECT_TIMEOUT', 1), \
+                patch.object(protocol.node, 'string_to_temp_file', return_value=types.SimpleNamespace(name='pinned-cert')):
+            client.connect()
+        worker.join(2)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(failures, [])
+        self.assertIn('BEGIN CERTIFICATE', client._node_cert)
+        self.assertEqual(client.session.verify, 'pinned-cert')
+        self.assertEqual(client._session_id, 'authenticated')
+        client.make_request.assert_called_once_with('/connect')
 
     def test_real_mtls_new_service_uses_bounded_rpc_and_existing_contract(self):
         server = self.tls_server(protocol.NewService)
@@ -167,7 +209,7 @@ class NodeTransportRecoveryTests(unittest.TestCase):
         with patch.object(protocol.node.grpc, 'channel_ready_future') as ready:
             ready.return_value.result.side_effect = protocol.node.grpc.FutureTimeoutError()
             for operation in (client.start, client.restart):
-                with self.assertRaisesRegex(ConnectionError, '62051.*5s'):
+                with self.assertRaisesRegex(ConnectionError, '62051.*10s'):
                     operation(config)
 
 
