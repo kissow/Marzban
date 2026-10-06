@@ -1,5 +1,9 @@
 # Marzban 开源扩展功能
 
+## MR-20261007-BROWSER-TRANSLATION（本地修复，未发布）
+
+HTML/body 浏览器翻译保护覆盖 React 根与 Chakra Portal；主机设置的加载/空列表文字由原 Text 组件包裹，避免外部翻译替换文本后卸载崩溃。原主题、宽度、表单、四语言与所有配置保留；无 API/数据库/Node/scripts/Xray 变化。本地验证和上线验收分别登记，当前服务器不会获得未发布代码。[详细记录](docs/BROWSER_TRANSLATION.md)。
+
 ## MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 
 修复慢控制链路被当作会话失效的问题：保留 session、只对精确 Session mismatch 重新认证；只读请求有限重试，变更请求不立即重放；不确定健康异常退避而不盲目重启核心。并行健康探测、单快照/互斥批量账号同步及流量/日志异常隔离，防止故障扩散到健康节点。两轮 116/116、专项 20/20 与真实传输 13/13 各连续复跑三轮通过。API/数据/UI/证书/端口/HWID/Xray v26.3.27 不变，Node/scripts 不需本轮更新。[接口期限、边界、证据与验收](docs/NODE_CONTROL_RESILIENCE.md)。

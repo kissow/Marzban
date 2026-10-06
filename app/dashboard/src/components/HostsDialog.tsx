@@ -1290,7 +1290,7 @@ export const HostsDialog: FC = () => {
               <Text mb={3} opacity={0.8} fontSize="sm">
                 {t("hostsDialog.title")}
               </Text>
-              {isLoading && t("hostsDialog.loading")}
+              {isLoading && <Text as="span">{t("hostsDialog.loading")}</Text>}
               {!isLoading &&
                 hosts &&
                 (Object.keys(hosts).length > 0 ? (
@@ -1314,7 +1314,7 @@ export const HostsDialog: FC = () => {
                     </VStack>
                   </Accordion>
                 ) : (
-                  t("hostsDialog.noInbound")
+                  <Text as="span">{t("hostsDialog.noInbound")}</Text>
                 ))}
 
               <HStack justifyContent="flex-end" py={2}>

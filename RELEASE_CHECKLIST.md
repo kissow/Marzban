@@ -1,5 +1,16 @@
 # Marzban 主面板发布清单
 
+## MR-20261007-BROWSER-TRANSLATION（本地修复，未发布）
+
+- [x] 只修改原 HTML 翻译声明及 HostsDialog 动态文本包装；主题/宽度/表单/协议保留，无全局 DOM 异常吞掉补丁。
+- [x] 前端语言与翻译保护回归 40/40，TypeScript 与生产构建通过；PR CI 加入同一测试命令。
+- [x] 固定项目入口完整后端 116/116 与 Check/diff 通过；现有弃用提示保留，后端无修改。
+- [x] 原组件浏览器模拟文本替换后状态切换/开关 10 轮，四语言及 1280px/390px 宽度/截图核对通过；无 pageerror/removeChild，保留已有开发嵌套按钮警告，非实际线上翻译验收。
+- [x] README/功能/更新/API/流程及工作区 05/08/09 同步；Node/scripts 明确无变化。
+- [ ] 推送、Actions、新主控镜像 digest/双架构 revision、服务器更新及真实浏览器翻译验收。
+
+[详细记录](docs/BROWSER_TRANSLATION.md)。历史镜像不包含本轮未发布修复。
+
 ## MR-20261006-CONTROL-RESILIENCE（镜像已发布，服务器验收待完成）
 
 - [x] 主控会话保留、只读有限重试、健康退避/并行、多用户同步和流量/日志隔离；无 UI/数据/端口/证书/HWID/Xray 修改。
