@@ -1,6 +1,6 @@
 # MR-20261007-NODE-RELAY：主服务器中转到子节点
 
-状态：2026-10-07 本地实现及回归完成，用户已授权上传和构建；正在发布，Linux CI、新镜像及服务器证据尚待核对。实际界面截图被浏览器管理策略校验阻止，UI 与公网客户端验收未通过。本轮不是线上稳定发布。
+状态：2026-10-07 代码已合并、新镜像已发布并核对双架构摘要/revision。Linux CI（含真实固定Xray进程）通过；用户授权先发布，实际界面截图因浏览器策略blocked，公网REALITY/手机/实际提速验收仍待执行，未远程更新服务器。本轮不冒称稳定发布。
 
 ## 1. 使用范围
 
@@ -91,7 +91,7 @@ GET/PUT/DELETE 响应包含 `configured`、`mode`、`source`、`entry_address`�
 - 前端 **44/44**（原 40 + 新 4）连续三轮，生产/原组件预览 TypeScript、生产 Vite 构建、compileall、pip check 与固定入口 Check/diff 检查通过，保留既有 chunk-size/CRLF 提示。datetime/Pydantic 既有弃用提示没有冒充新功能失败，也未顺带重构。
 - 本地预览为原生产组件，接口数据为演示、保存仅写内存；不能当作生产后端联调。浏览器 admin-enforced policy 无法核验，截图与界面交互验收为 **blocked**，不绕过策略。
 - 实现期间发现并修复 subscription→service→DB 的循环导入（改为延迟导入）、原 AST 路由测试 namespace 未适配、React Query onError 返回值类型错误、自动端口预览显示未保存手动端口；重跑后才登记通过。订阅测试夹具须显式传 DB 风格的 flow 字符串，不使用未验证的 enum 默认值来替代实际返回值。
-- 本地测试入口保持 PowerShell 7/UTF-8、项目内 Python/缓存。真实进程测试仅当显式设置 `MR_SHAW_RELAY_TEST_XRAY` 为固定二进制时运行；普通 CI 未准备该二进制会明确 skip 两项，不能说 Linux 真实转发已验证。
+- 本地测试入口保持 PowerShell 7/UTF-8、项目内 Python/缓存。普通 CI 后端142项中两项显式进程测试先skip；本次两条工作流随后单独准备Xray v26.3.27，并显式设置 MR_SHAW_RELAY_TEST_XRAY 运行两项真实Linux TCP/TLS/恢复测试，已通过。因此140项普通回归加2项真实进程均实际执行，但不是生产REALITY/公网手机客户端验收。
 - 追加检查中，单独读取 Alembic head 会经旧 TLS 迁移导入 app、隐式要求生产 Xray，导致本地命令失败。未修改旧迁移或更换环境；改为已有隔离版本启动夹具中读取 head 并补测试，验证唯一新 head/父版本。此环境入口失败不冒充生产迁移失败或通过。
 
 ## 9. 上线验收清单（待执行）
@@ -104,7 +104,7 @@ GET/PUT/DELETE 响应包含 `configured`、`mode`、`source`、`entry_address`�
 6. Node 失联、端口冲突、主控重启、保存失败/取消/禁用/删除；核对原因、恢复和旧数据。公网丢包/容量问题不是代码可保证消除的。
 7. 三段链路分段测速、CPU/内存、TCP 重传及至少 30 分钟运行观察；香港总带宽/美国出口/住宅供应商任一均可成为瓶颈，两台服务器可能均计费。不承诺中转必然提速。
 
-本轮已获发布授权；源 commit/Actions/镜像摘要在完成后回写，服务器与界面验收仍待执行。发布验证完成前，不使用旧 latest 冒充本功能镜像。
+本轮发布授权、源/合并提交、Actions及镜像均已核对，详见第11节；界面和服务器验收仍待执行，不用历史发布替代本轮证据。
 
 ## 10. 对照测速（更新后执行）
 
@@ -131,3 +131,26 @@ iperf3 -c "$TEST_US_IP" -p 5201 -t 15 -P 1 -R
 第一条数据香港→美国，`-R` 数据美国→香港；可重复三轮，必要时对照 `-P 4` 总吞吐，不把多流成绩当单连接速度。结束在美国 Ctrl+C，删除临时5201规则。[iperf3 官方参数](https://software.es.net/iperf/invoking.html)。
 
 这个测试只测香港/美国机器之间，不经过真实 REALITY 用户连接，也不测客户端→香港或美国→网站/住宅代理。结合浏览器三条目对照、两台 `docker stats --no-stream`、实际流量/重传才能定位瓶颈。不保证中转必然更快，任何一段线路/带宽/住宅代理都可能限制最终速度。
+
+## 11. 本轮发布证据与服务器更新
+
+- 源提交：134f12faf5e29e53986ff271a8c8f57b8a38db38；[PR #16](https://github.com/kissow/Marzban/pull/16)，合并运行时 d23502030358930592016f9ff2f7d3f42acad4e7。
+- [PR Linux CI 37637526876](https://github.com/kissow/Marzban/actions/runs/37637526876) 与 [正式构建 37637973415](https://github.com/kissow/Marzban/actions/runs/37637973415) 首次成功；140普通后端 + 2真实Xray进程、44前端、类型/生产构建和核心版本闸门通过。
+- 镜像 ghcr.io/kissow/marzban:latest；index sha256:252adac60cdcbcc83a7ef13a080d52876876017a65220c58fcf76539db9ccd03。
+- linux/amd64 manifest sha256:1766ed650d74242fb5119244ba2a0cae67e5d9037415f3abd62819ca15e7c82c；config sha256:fcd8ee6c295ef7c8bbeed67ae7279ade1c0603d98df2b7ada327c49c926fb1aa。
+- linux/arm64 manifest sha256:4abdbdcc4cc31b8ed225c3d4a9e52b5c1269615008d991ae32f98150c0affba3；config sha256:87e06e24d634796ac9d994c87686297870c6bae2179981fc7cc521fa94bb1c54。
+- 两架构 OCI revision 均为 d23502030358930592016f9ff2f7d3f42acad4e7；2026-10-07T22:43:55+08:00核对原始字节哈希、registry digest、前后latest未变化。
+- 保留既有Vite chunk-size提示、datetime/Pydantic弃用提示；Actions提示Node20 action运行时弃用/自动迁移24及ubuntu-latest后续迁移，当前构建成功，不在本轮顺带升级工作流依赖。Git文档回写fetch两次连接reset是本地网络失败，不是Actions失败；文档经认证GitHub API回写时单独登记，不冒称Git fetch成功。
+
+已切换本Fork的主控服务器，root SSH执行（非root用sudo）；现有脚本先备份并保留.env/数据，更新短暂重启，外部数据库须另行备份。保留 Pre-update backup 路径，不重装/删卷：
+
+```sh
+marzban update
+marzban status
+marzban logs --no-follow 2>&1 | tail -n 100
+docker ps --filter label=com.docker.compose.service=marzban --format '{{.ID}}' | xargs -r docker inspect --format '{{.Name}} | {{.Config.Image}} | {{index .Config.Labels "org.opencontainers.image.revision"}}'
+```
+
+运行镜像须为 ghcr.io/kissow/marzban:latest，revision须为上面的d23502030358930592016f9ff2f7d3f42acad4e7，核心26.3.27。本轮Node/scripts无需更新。只写文档的[skip ci]提交不改变镜像revision。
+
+刷新页面后，在美国Node的“连接方式”选择经主服务器中转，填写香港公网IPv4或DNS-only入口，选自动/手动业务端口及该Node原VLESS TCP/RAW REALITY入站并保存。仅放行香港分配的业务TCP端口，美国原入站允许香港访问；控制/API端口不改。更新客户端订阅、选美国(Relay)，按第9/10节核对出口/客户端/测速；原香港/美国直连仍在。保存运行中不等于这些验收已完成。

@@ -1,13 +1,13 @@
 # Mr.shaw Marzban Fork 更新记录
 
-## 2026-10-07 — MR-20261007-NODE-RELAY（本地实现、未发布）
+## 2026-10-07 — MR-20261007-NODE-RELAY（镜像已发布，服务器待验收）
 
-- 原 Node 组件增加折叠连接方式：直连/经主服务器中转；独立入口地址/端口和目标业务入站选择。保留原主题/800px宽度/证书/端口/倍率/健康/出口控件，手机单列，四语言齐全。
-- 固定 Xray v26.3.27 独立 TCP 固定转发进程；不把 REST 当数据中转，不动原主/子核心。首次仅 VLESS TCP/RAW REALITY，IPv4 入口，原生 UDP 和其它协议不删除、不冒称已接入。
-- 每 Node 专用数据库记录、自动/手动端口冲突检查、先语法/监听校验再提交、进程和数据库失败恢复、15秒定期恢复。重建中转进程会短断全部中转会话，香港直连核心不重启。
-- 四个新增 sudo API 和 additive 迁移 8f9012ab34cd；新增虚拟订阅条目不改原 Hosts，保持 REALITY 与共享/HWID 私有用户凭据。Node/scripts 不需本轮运行时更新，原证书/控制/API/.env/数据保留。
-- 增加配置/存储/API/订阅/迁移与真实 loopback Xray 测试；发现并修复循环导入、原 AST 夹具 namespace、错误回调类型及自动端口显示问题，拒绝与 IPv4 监听不匹配的 IPv6 入口。最终结果统一登记在详细记录，既有弃用/chunk 提示保留。
-- 浏览器策略校验不可用，真实 UI 比较 blocked；未推送/构建新镜像/更新服务器。100配置测试不是公网负载验收。[完整功能/API/测试/回滚](docs/NODE_RELAY.md)。
+- 原 Chakra Node 组件增加折叠连接方式、自动/手动入口端口与虚拟订阅，不替换原主题/字段。
+- 主服务器可选每 Node TCP 中转，首版仅 VLESS TCP/RAW REALITY、IPv4 入口。原直连条目、用户凭据、REALITY 参数、证书、Node 控制/API/倍率/住宅出口保留；Node/scripts 无本轮运行时或命令变化、不需服务器更新，Xray 固定 v26.3.27。新增四个 sudo API、node_relays additive 迁移 8f9012ab34cd、独立进程及失败恢复；running 仅代表本地监听就绪。
+- 新增配置/存储/权限/迁移/订阅/真实进程测试；修复实现中发现的循环导入、AST夹具、React Query回调类型、自动端口显示与IPv6入口监听不匹配。两条 CI 均增加显式固定 Xray Linux 进程验证。
+- 用户已授权先发布。源 134f12faf5e29e53986ff271a8c8f57b8a38db38，PR #16 合入 d23502030358930592016f9ff2f7d3f42acad4e7；PR CI 37637526876 成功（140 项普通后端 + 两项显式真实 Linux Xray、前端44/44、类型/生产构建），本地最终142/142及前端44/44复核通过。正式 Actions 37637973415 首次成功；latest index sha256:252adac60cdcbcc83a7ef13a080d52876876017a65220c58fcf76539db9ccd03 与 amd64/arm64 manifest/config/OCI revision 已核对（d23502030358930592016f9ff2f7d3f42acad4e7）。仅文档回写 [skip ci] 不改变该运行时版本。UI 截图受浏览器管理策略阻止，服务器、公网 REALITY/手机与实际提速仍待验收，不冒称稳定发布。
+
+[完整记录与测速](docs/NODE_RELAY.md)。
 
 ## 2026-10-07 — MR-20261007-BROWSER-TRANSLATION（镜像已发布，服务器验收待完成）
 

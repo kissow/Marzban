@@ -1,8 +1,10 @@
 # Mr.shaw 扩展接口与更新规范
 
-## MR-20261007-NODE-RELAY（新增管理接口，本地实现、未发布）
+## MR-20261007-NODE-RELAY（新增管理接口，镜像已发布）
 
-新增 `GET /api/nodes/relay/options`、`GET/PUT/DELETE /api/node/{node_id}/relay`，统一现有 sudo Bearer 认证；401/403/404/422/409，数据库失败恢复运行时后可为500。PUT direct/relay、source=main、entry_address、allocation=auto/manual、listen_port、inbound_tag；读取配置、目标和本地监听状态。running/200不等于公网或REALITY客户端连通。新增 node_relays additive 迁移8f9012ab34cd；原API/Hosts/Node认证不修改，无接口弃用。虚拟订阅新增(Relay)条目，参数/用户凭据不变；首版仅VLESS TCP/RAW REALITY，IPv4入口。Node/scripts无需本轮运行时更新，Xray仍v26.3.27。未发布，当前update不能获取。[完整字段、错误、副作用、兼容与回滚](docs/NODE_RELAY.md)。
+新增 sudo Bearer 的 GET /api/nodes/relay/options 与 GET/PUT/DELETE /api/node/{node_id}/relay：direct/relay、source=main、entry_address、allocation=auto/manual、listen_port、inbound_tag；返回配置/目标/本地监听状态。401/403/404/422/409，数据库失败可500且先恢复运行时；无旧接口删除。主服务器可选每 Node TCP 中转，首版仅 VLESS TCP/RAW REALITY、IPv4 入口。原直连条目、用户凭据、REALITY 参数、证书、Node 控制/API/倍率/住宅出口保留；Node/scripts 无本轮运行时或命令变化、不需服务器更新，Xray 固定 v26.3.27。新增四个 sudo API、node_relays additive 迁移 8f9012ab34cd、独立进程及失败恢复；running 仅代表本地监听就绪。
+
+用户已授权先发布。源 134f12faf5e29e53986ff271a8c8f57b8a38db38，PR #16 合入 d23502030358930592016f9ff2f7d3f42acad4e7；PR CI 37637526876 成功（140 项普通后端 + 两项显式真实 Linux Xray、前端44/44、类型/生产构建），本地最终142/142及前端44/44复核通过。正式 Actions 37637973415 首次成功；latest index sha256:252adac60cdcbcc83a7ef13a080d52876876017a65220c58fcf76539db9ccd03 与 amd64/arm64 manifest/config/OCI revision 已核对（d23502030358930592016f9ff2f7d3f42acad4e7）。仅文档回写 [skip ci] 不改变该运行时版本。UI 截图受浏览器管理策略阻止，服务器、公网 REALITY/手机与实际提速仍待验收，不冒称稳定发布。 [完整字段、认证、错误、副作用、兼容与回滚](docs/NODE_RELAY.md)。
 
 ## MR-20261007-BROWSER-TRANSLATION（展示兼容，镜像已发布、服务器待验收）
 

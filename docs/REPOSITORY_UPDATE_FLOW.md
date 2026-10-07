@@ -1,8 +1,10 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
-## MR-20261007-NODE-RELAY（本地实现、未发布）
+## MR-20261007-NODE-RELAY（镜像已发布，服务器待验收）
 
-主控增加原节点折叠连接方式、独立Xray TCP转发、专用node_relays表/迁移8f9012ab34cd与四个sudo API、虚拟订阅入口；保留原直连、用户凭据、主题、证书/Node控制/API/倍率/住宅出口。首版仅VLESS TCP/RAW REALITY、主服务器来源/IPv4入口，Xray v26.3.27；Node/scripts无运行时、协议、端口、命令变化，不需本轮配对更新。API、迁移、故障回滚、副作用、参考/致谢已登记；工作区05/08/09同步。本地多轮回归和前端构建已通过，实际截图因管理策略不可核验而blocked；本轮未提交/推送、无Actions/新镜像/服务器证据，不沿用旧latest。先审核界面，再授权发布，最后服务器验收。[详细证据与流程](NODE_RELAY.md)。
+主服务器可选每 Node TCP 中转，首版仅 VLESS TCP/RAW REALITY、IPv4 入口。原直连条目、用户凭据、REALITY 参数、证书、Node 控制/API/倍率/住宅出口保留；Node/scripts 无本轮运行时或命令变化、不需服务器更新，Xray 固定 v26.3.27。新增四个 sudo API、node_relays additive 迁移 8f9012ab34cd、独立进程及失败恢复；running 仅代表本地监听就绪。 API/迁移/回滚/兼容和工作区05/08/09已登记。
+
+用户已授权先发布。源 134f12faf5e29e53986ff271a8c8f57b8a38db38，PR #16 合入 d23502030358930592016f9ff2f7d3f42acad4e7；PR CI 37637526876 成功（140 项普通后端 + 两项显式真实 Linux Xray、前端44/44、类型/生产构建），本地最终142/142及前端44/44复核通过。正式 Actions 37637973415 首次成功；latest index sha256:252adac60cdcbcc83a7ef13a080d52876876017a65220c58fcf76539db9ccd03 与 amd64/arm64 manifest/config/OCI revision 已核对（d23502030358930592016f9ff2f7d3f42acad4e7）。仅文档回写 [skip ci] 不改变该运行时版本。UI 截图受浏览器管理策略阻止，服务器、公网 REALITY/手机与实际提速仍待验收，不冒称稳定发布。 [详细证据、服务器流程与测速](NODE_RELAY.md)。
 
 ## MR-20261007-BROWSER-TRANSLATION（镜像已发布，服务器验收待完成）
 
