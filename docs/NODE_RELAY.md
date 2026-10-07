@@ -1,3 +1,5 @@
+> 本功能已包含MR-20261008配对发布；[当前精确镜像/SSH/验收证据](NODE_RELAY_SOURCES_RELEASE.md)。下文未发布/需CI等文字记录原本地阶段，不代表当前latest；服务器与真实UI验收仍待完成。
+
 > 后续本地修复 **MR-20261007-RELAY-INTERNAL-SUBSCRIPTION**：改为保留原条目和别名、内部替换端点，不再额外输出 `(Relay)`；[新合同与状态](NODE_RELAY_SUBSCRIPTION.md)。尚未发布，以下 d2350203 发布记录及额外条目行为仅描述旧镜像，不能当作本轮实现。用户报告旧中转条目已可用，持续公网/多客户端验收仍未完成。
 
 # MR-20261007-NODE-RELAY：Marzban 主服务器中转到 Node 节点

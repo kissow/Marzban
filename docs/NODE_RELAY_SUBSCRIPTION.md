@@ -1,3 +1,5 @@
+> 本功能已包含MR-20261008配对发布；[当前精确镜像/SSH/验收证据](NODE_RELAY_SOURCES_RELEASE.md)。下文未发布/需CI等文字记录原本地阶段，不代表当前latest；服务器与真实UI验收仍待完成。
+
 # MR-20261007-RELAY-INTERNAL-SUBSCRIPTION
 
 状态：本地兼容修复，未推送、未构建本轮镜像、未服务器验收。旧发布 d23502030358930592016f9ff2f7d3f42acad4e7 的镜像证据不能代替此修复。
