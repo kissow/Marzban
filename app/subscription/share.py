@@ -268,7 +268,7 @@ def process_inbounds_and_tags(
 
             format_variables.update({"TRANSPORT": inbound["network"]})
             host_inbound = inbound.copy()
-            for host in [*xray.hosts.get(tag, []), *subscription_hosts(tag)]:
+            for host in subscription_hosts(tag):
                 sni = ""
                 sni_list = host["sni"] or inbound["sni"]
                 if sni_list:
@@ -276,7 +276,7 @@ def process_inbounds_and_tags(
                     sni = random.choice(sni_list).replace("*", salt)
 
                 if sids := inbound.get("sids"):
-                    inbound["sid"] = random.choice(sids)
+                    host_inbound["sid"] = random.choice(sids)
 
                 req_host = ""
                 req_host_list = host["host"] or inbound["host"]
