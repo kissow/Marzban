@@ -2,6 +2,8 @@
 
 ## MR-20261007-NODE-RELAY（镜像已发布，服务器待验收）
 
+开源文档统一使用“Marzban 主服务器中转到 Node 节点”，不将主服务器所在地区作为前提。配置、拓扑、示例、安装、测速和验收均以主服务器/目标Node说明；示例域名使用main.example.com等通用占位，不绑定特定维护者或国家/地区。
+
 主服务器可选每 Node TCP 中转，首版仅 VLESS TCP/RAW REALITY、IPv4 入口。原直连条目、用户凭据、REALITY 参数、证书、Node 控制/API/倍率/住宅出口保留；Node/scripts 无本轮运行时或命令变化、不需服务器更新，Xray 固定 v26.3.27。新增四个 sudo API、node_relays additive 迁移 8f9012ab34cd、独立进程及失败恢复；running 仅代表本地监听就绪。 API/迁移/回滚/兼容和工作区05/08/09已登记。
 
 用户已授权先发布。源 134f12faf5e29e53986ff271a8c8f57b8a38db38，PR #16 合入 d23502030358930592016f9ff2f7d3f42acad4e7；PR CI 37637526876 成功（140 项普通后端 + 两项显式真实 Linux Xray、前端44/44、类型/生产构建），本地最终142/142及前端44/44复核通过。正式 Actions 37637973415 首次成功；latest index sha256:252adac60cdcbcc83a7ef13a080d52876876017a65220c58fcf76539db9ccd03 与 amd64/arm64 manifest/config/OCI revision 已核对（d23502030358930592016f9ff2f7d3f42acad4e7）。仅文档回写 [skip ci] 不改变该运行时版本。UI 截图受浏览器管理策略阻止，服务器、公网 REALITY/手机与实际提速仍待验收，不冒称稳定发布。 [详细证据、服务器流程与测速](NODE_RELAY.md)。

@@ -7,7 +7,7 @@
 - [x] 用户授权先发布；PR #16 合入 d2350203；Linux CI 37637526876，普通140项与两项真实固定Xray、前端44项通过。
 - [x] 正式 Actions 37637973415 成功，latest index sha256:252adac60cdcbcc83a7ef13a080d52876876017a65220c58fcf76539db9ccd03、双架构 manifest/config/OCI revision d23502030358930592016f9ff2f7d3f42acad4e7已核对。
 - [ ] 真实原组件截图：浏览器策略blocked，不登记为通过。
-- [ ] 备份升级、香港/美国/第二Node出口、手机/订阅/用量及至少30分钟公网测速验收。
+- [ ] 备份升级、Marzban主服务器/目标Node/第二Node出口、手机/订阅/用量及至少30分钟公网测速验收。
 
 Node/scripts无变化、不需本轮更新；Xray v26.3.27。[完整发布/验收证据及测速](docs/NODE_RELAY.md)。
 
