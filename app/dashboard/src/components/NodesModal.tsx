@@ -69,6 +69,7 @@ import { Icon } from "./Icon";
 import { NodeModalStatusBadge } from "./NodeModalStatusBadge";
 import { NodeEgressCard } from "./NodeEgressCard";
 import { NodeHealthCard } from "./NodeHealthCard";
+import { NodeRelayCard } from "./NodeRelayCard";
 
 import { fetch } from "service/http";
 import { Input } from "./Input";
@@ -234,6 +235,7 @@ const NodeAccordion: FC<AccordionInboundType> = ({ node, isOpen }) => {
             <VStack w="full" pb={2} alignItems="stretch" spacing={0}>
               <NodeHealthCard nodeId={node.id!} enabled={node.status === "connected"} />
               <NodeEgressCard nodeId={node.id!} nodeName={node.name} enabled />
+              <NodeRelayCard nodeId={node.id!} nodeName={node.name} address={node.address} disabled={node.status === "disabled"} />
             </VStack>
           }
           mutate={mutate}

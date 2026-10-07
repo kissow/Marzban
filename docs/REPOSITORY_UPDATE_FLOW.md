@@ -1,5 +1,9 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
+## MR-20261007-NODE-RELAY（本地实现、未发布）
+
+主控增加原节点折叠连接方式、独立Xray TCP转发、专用node_relays表/迁移8f9012ab34cd与四个sudo API、虚拟订阅入口；保留原直连、用户凭据、主题、证书/Node控制/API/倍率/住宅出口。首版仅VLESS TCP/RAW REALITY、主服务器来源/IPv4入口，Xray v26.3.27；Node/scripts无运行时、协议、端口、命令变化，不需本轮配对更新。API、迁移、故障回滚、副作用、参考/致谢已登记；工作区05/08/09同步。本地多轮回归和前端构建已通过，实际截图因管理策略不可核验而blocked；本轮未提交/推送、无Actions/新镜像/服务器证据，不沿用旧latest。先审核界面，再授权发布，最后服务器验收。[详细证据与流程](NODE_RELAY.md)。
+
 ## MR-20261007-BROWSER-TRANSLATION（镜像已发布，服务器验收待完成）
 
 浏览器翻译 opt-out 与原 HostsDialog 动态状态文本包装；原主题、宽度、四语言和表单保留。主控 hosts/inbounds API、数据、证书、端口、Node 协议、HWID/UDP、Xray v26.3.27 不变，Node/scripts 无本轮运行时或命令变化。本地/干净 Linux 前端 40/40、后端 116/116、TypeScript/生产构建通过；PR #14 合入 96599563、正式 Actions 37494615636 成功，latest index/双架构 OCI revision 已核对。服务器验收待执行，不能用历史发布摘要代替；仅文档 [skip ci] 回写不重建镜像。[本轮精确证据和范围](BROWSER_TRANSLATION.md)。

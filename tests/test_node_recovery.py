@@ -302,7 +302,8 @@ class NodeAdminLifecycleTests(unittest.TestCase):
                 module = ast.Module(body=[ast.ImportFrom(module='__future__',
                                     names=[ast.alias(name='annotations')], level=0), function], type_ignores=[])
                 namespace = {'crud': crud, 'xray': types.SimpleNamespace(operations=operations),
-                             'NodeStatus': orchestration.node_models.NodeStatus, 'logger': Mock()}
+                             'NodeStatus': orchestration.node_models.NodeStatus, 'logger': Mock(),
+                             'node_relay_service': Mock()}
                 exec(compile(ast.fix_missing_locations(module), str(path), 'exec'), namespace)
                 if name == 'modify_node':
                     namespace[name](Mock(), Mock(), row, Mock(), Mock())
