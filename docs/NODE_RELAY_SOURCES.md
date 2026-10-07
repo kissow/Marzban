@@ -1,6 +1,8 @@
+> 本功能已包含MR-20261008配对发布；[当前精确镜像/SSH/验收证据](NODE_RELAY_SOURCES_RELEASE.md)。下文未发布/需CI等文字记录原本地阶段，不代表当前latest；服务器与真实UI验收仍待完成。
+
 # MR-20261008-NODE-RELAY-SOURCES
 
-状态：本地开发与测试，未提交/推送本轮代码、未运行本轮 Linux CI、未构建或发布本轮镜像、未完成服务器验收。旧发布摘要不包含本功能。维护者：Mr.shaw。
+状态：配对代码已合并，干净Linux CI和双架构镜像已发布核对；服务器、真实UI及多引擎数据库验收待完成，不标稳定版。[精确发布和SSH证据](NODE_RELAY_SOURCES_RELEASE.md)。维护者：Mr.shaw。
 
 ## 功能和界面
 
@@ -61,7 +63,7 @@ RPyC 请求/响应传 JSON 字符串，REST 传原生 JSON，避免远程嵌套 
 
 每个来源用一个独立转发进程管理完整快照；改变其中一个目标时可能短暂中断同来源其他中转会话，不重启其业务核心。不宣称零中断更新；不同来源的保存不会探测/重写无关来源，周期恢复仍统一检查并隔离失败。
 
-数据库 additive migration `9012ab34cd56` 接在 `8f9012ab34cd` 后，给 node_relays 增加 source（默认main）和 source_node_id（源删除SET NULL）。原 relay 自动保持主服务器来源；原用户、订阅、证书、端口、环境和数据卷不删除。发布前仍需干净 Linux、真实 PostgreSQL/MySQL 迁移验收；SQLite 旧行升级/回滚本地覆盖不代表所有数据库已验证。
+数据库 additive migration `9012ab34cd56` 接在 `8f9012ab34cd` 后，给 node_relays 增加 source（默认main）和 source_node_id（源删除SET NULL）。原 relay 自动保持主服务器来源；原用户、订阅、证书、端口、环境和数据卷不删除。干净Linux CI已通过；真实PostgreSQL/MySQL迁移验收仍待执行；SQLite 旧行升级/回滚本地覆盖不代表所有数据库已验证。
 
 ## 发布、升级和验收门槛
 
@@ -69,7 +71,7 @@ RPyC 请求/响应传 JSON 字符串，REST 传原生 JSON，避免远程嵌套 
 
 新增测试初次失败为测试辅助函数重复entry_address参数、原disabled断言插入到deleted-source测试尾部；修正测试边界后42项专项和最终全量复跑通过。单独保存某目标不应探测无关离线来源的问题已修复并加入回归，不只记录“多测一次”。
 
-本轮需要主面板与源 Node 配对镜像，scripts 仅配对文档，不改安装代码。先审核原组件 UI，再获准推送、两边 Linux CI、双架构镜像/revision 核对。**目前运行 update 不会获取未发布修改。**
+主面板与源Node配对镜像已发布，scripts仅配对文档、不改安装代码。用户授权后已上传/合并，两边Linux CI、双架构镜像和revision已核对；现在update可取得本功能。实际UI截图受浏览器策略阻断、真实服务器验收待执行，不标稳定版。
 
 发布后已切换 Fork 的安装：备份，在承担来源的服务器运行 `marzban-node update`，检查连接/能力/固定核心，再在主控运行 `marzban update`。仅作目标、不作来源的已配对 Node 不因本功能强制更新；若也作为来源就需更新。无需重复 adopt/install，不换证书或原控制/API端口。新服务器沿用仓库一键install流程，镜像发布后才包含新能力。仅放行所选源的业务入口 TCP端口；既有认证端口安全范围保持。
 
