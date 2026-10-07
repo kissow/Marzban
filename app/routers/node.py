@@ -19,12 +19,15 @@ from app.models.node import (
     NodesUsageResponse,
     NodeEgressModify,
     NodeEgressResponse,
+    NodeRelayModify,
+    NodeRelayResponse,
 )
 from app.models.proxy import ProxyHost
 from app.utils import responses
 from app.xray.node_health import normalize_node_health
 from app.xray.node_egress import supports_egress
 from app.xray.node_egress_store import public_egress, save_egress
+from app.xray import node_relay_service
 
 router = APIRouter(
     tags=["Node"], prefix="/api", responses={401: responses._401, 403: responses._403}
@@ -149,6 +152,39 @@ def get_node_egress(
     _: Admin = Depends(Admin.check_sudo_admin),
 ):
     return public_egress(db, dbnode)
+
+
+@router.get("/nodes/relay/options")
+def get_relay_options(db: Session = Depends(get_db), _: Admin = Depends(Admin.check_sudo_admin)):
+    return node_relay_service.options(db)
+
+
+@router.get("/node/{node_id}/relay", response_model=NodeRelayResponse)
+def get_node_relay(dbnode=Depends(get_dbnode), _: Admin = Depends(Admin.check_sudo_admin)):
+    return node_relay_service.public(dbnode)
+
+
+@router.put("/node/{node_id}/relay", response_model=NodeRelayResponse)
+def update_node_relay(settings: NodeRelayModify, dbnode=Depends(get_dbnode),
+                      db: Session = Depends(get_db), _: Admin = Depends(Admin.check_sudo_admin)):
+    try:
+        return node_relay_service.save(db, dbnode, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Relay port is already allocated") from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.delete("/node/{node_id}/relay", response_model=NodeRelayResponse)
+def remove_node_relay(dbnode=Depends(get_dbnode), db: Session = Depends(get_db),
+                      _: Admin = Depends(Admin.check_sudo_admin)):
+    try:
+        return node_relay_service.save(db, dbnode, NodeRelayModify(mode="direct"))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.put("/node/{node_id}/egress", response_model=NodeEgressResponse)
@@ -278,6 +314,7 @@ def modify_node(
         bg.add_task(xray.operations.connect_node, node_id=updated_node.id)
 
     logger.info(f'Node "{dbnode.name}" modified')
+    bg.add_task(node_relay_service.refresh)
     return dbnode
 
 
@@ -304,6 +341,7 @@ def remove_node(
         xray.operations.remove_node(dbnode.id)
 
     logger.info(f'Node "{dbnode.name}" deleted')
+    node_relay_service.refresh()
     return {}
 
 

@@ -1,5 +1,9 @@
 # Mr.shaw 扩展接口与更新规范
 
+## MR-20261007-NODE-RELAY（新增管理接口，本地实现、未发布）
+
+新增 `GET /api/nodes/relay/options`、`GET/PUT/DELETE /api/node/{node_id}/relay`，统一现有 sudo Bearer 认证；401/403/404/422/409，数据库失败恢复运行时后可为500。PUT direct/relay、source=main、entry_address、allocation=auto/manual、listen_port、inbound_tag；读取配置、目标和本地监听状态。running/200不等于公网或REALITY客户端连通。新增 node_relays additive 迁移8f9012ab34cd；原API/Hosts/Node认证不修改，无接口弃用。虚拟订阅新增(Relay)条目，参数/用户凭据不变；首版仅VLESS TCP/RAW REALITY，IPv4入口。Node/scripts无需本轮运行时更新，Xray仍v26.3.27。未发布，当前update不能获取。[完整字段、错误、副作用、兼容与回滚](docs/NODE_RELAY.md)。
+
 ## MR-20261007-BROWSER-TRANSLATION（展示兼容，镜像已发布、服务器待验收）
 
 无接口、字段、认证、迁移、命令新增/删除。原 GET /api/hosts、PUT /api/hosts 及 GET /api/inbounds 的请求/响应/权限不变；只保护浏览器 DOM 和包装两个动态状态文本。Node REST/RPyC/HWID/UDP 与正式 Xray v26.3.27 不变；Node/scripts 不需配对更新。PR #14 合入 96599563、正式 Actions 37494615636 成功，latest 双架构摘要/OCI revision 已核对。既有 Fork 主控使用 marzban update 后重新加载页面；面板原语言菜单保留，服务器验收待执行。[源码、测试、精确摘要和上线验收边界](docs/BROWSER_TRANSLATION.md)。

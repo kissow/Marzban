@@ -243,6 +243,9 @@ def process_inbounds_and_tags(
         ],
         reverse=False,
 ) -> Union[List, str]:
+    # Lazy import: UserResponse imports this module while DB models initialize.
+    from app.xray.node_relay_service import subscription_hosts
+
     _inbounds = []
     for protocol, tags in inbounds.items():
         for tag in tags:
@@ -265,7 +268,7 @@ def process_inbounds_and_tags(
 
             format_variables.update({"TRANSPORT": inbound["network"]})
             host_inbound = inbound.copy()
-            for host in xray.hosts.get(tag, []):
+            for host in [*xray.hosts.get(tag, []), *subscription_hosts(tag)]:
                 sni = ""
                 sni_list = host["sni"] or inbound["sni"]
                 if sni_list:

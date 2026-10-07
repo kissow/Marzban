@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import ConfigDict, BaseModel, Field
 
@@ -83,6 +83,30 @@ class NodeEgressResponse(BaseModel):
     port: Optional[int] = None
     username: Optional[str] = None
     has_password: bool = False
+
+
+class NodeRelayModify(BaseModel):
+    mode: Literal["direct", "relay"]
+    source: Literal["main"] = "main"
+    entry_address: Optional[str] = Field(None, max_length=253)
+    allocation: Literal["auto", "manual"] = "auto"
+    listen_port: Optional[int] = Field(None, ge=1024, le=65535, strict=True)
+    inbound_tag: Optional[str] = Field(None, max_length=256)
+    model_config = ConfigDict(extra="forbid")
+
+
+class NodeRelayResponse(BaseModel):
+    configured: bool
+    mode: Literal["direct", "relay"] = "direct"
+    source: Literal["main"] = "main"
+    entry_address: Optional[str] = None
+    allocation: Literal["auto", "manual"] = "auto"
+    listen_port: Optional[int] = None
+    inbound_tag: Optional[str] = None
+    target_address: Optional[str] = None
+    target_port: Optional[int] = None
+    status: Literal["inactive", "pending", "running", "error"] = "inactive"
+    error: Optional[str] = None
 
 
 class NodeUsageResponse(BaseModel):

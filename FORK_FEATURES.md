@@ -1,5 +1,9 @@
 # Marzban 开源扩展功能
 
+## MR-20261007-NODE-RELAY（本地实现、未发布）
+
+每 Node 可折叠中转设置，主服务器独立 Xray TCP 固定转发、自动/手动业务端口和虚拟订阅入口；香港直连条目和目标 Node 出口不改。首版仅 VLESS TCP/RAW REALITY、主服务器来源/IPv4入口；保留原 Node 地址/证书/控制/API/倍率/住宅出口与四语言主题。专用 additive 表和四个 sudo API；Node/scripts 无运行时变化，核心仍 v26.3.27。界面真实截图、Linux CI/镜像与公网验收待完成，不是已发布功能。[接口、限制、恢复和验收](docs/NODE_RELAY.md)。
+
 ## MR-20261007-BROWSER-TRANSLATION（镜像已发布，服务器验收待完成）
 
 HTML/body 浏览器翻译保护覆盖 React 根与 Chakra Portal；主机设置的加载/空列表文字由原 Text 组件包裹，避免外部翻译替换文本后卸载崩溃。原主题、宽度、表单、四语言与所有配置保留；无 API/数据库/Node/scripts/Xray 变化。PR #14 / 96599563 合入、正式 Actions 37494615636 成功，latest 双架构摘要/revision 已核对；既有 Fork 主控 marzban update 后重新加载页面，Node 无需更新。服务器和实际翻译服务验收仍待用户执行。[详细记录](docs/BROWSER_TRANSLATION.md)。
