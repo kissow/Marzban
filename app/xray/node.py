@@ -22,7 +22,7 @@ from xray_api import XRay as XRayAPI
 NODE_CONNECT_TIMEOUT = 15
 NODE_CONTROL_TIMEOUT = (10, 10)  # TCP/TLS connection, then response read
 NODE_API_READY_TIMEOUT = 10
-NODE_READ_ONLY_PATHS = frozenset(("/", "/ping", "/health", "/device-activity"))
+NODE_READ_ONLY_PATHS = frozenset(("/", "/ping", "/health", "/device-activity", "/relays/status"))
 
 
 def string_to_temp_file(content: str):
@@ -228,6 +228,16 @@ class ReSTXRayNode:
             if exc.status_code in (404, 405, 501):
                 return None
             raise
+
+    def get_relay_status(self):
+        if not self._session_id:
+            raise ConnectionError("Node is not connected")
+        return self.make_request("/relays/status")
+
+    def set_relays(self, profiles):
+        if not self._session_id:
+            raise ConnectionError("Node is not connected")
+        return self.make_request("/relays", timeout=(10, 40), profiles=profiles)
 
     def start(self, config: XRayConfig):
         if not self.connected:
@@ -505,6 +515,25 @@ class RPyCXRayNode:
         if not result.ready:
             raise TimeoutError("Node policy update timed out")
         return {key: result.value[key] for key in result.value}
+
+    def get_relay_status(self):
+        return self._relay_rpc("fetch_relay_status")
+
+    def set_relays(self, profiles):
+        return self._relay_rpc("set_relays", json.dumps(profiles))
+
+    def _relay_rpc(self, name, *args):
+        if not self.connected:
+            raise ConnectionError("Node is not connected")
+        method = getattr(self.connection.root, name, None)
+        if method is None:
+            raise NotImplementedError("Source Node does not support managed relays")
+        result = rpyc.async_(method)(*args)
+        result.set_expiry(40)
+        result.wait()
+        if not result.ready:
+            raise TimeoutError("Node relay RPC timed out")
+        return json.loads(result.value)
 
     def _prepare_config(self, config: XRayConfig):
         for inbound in config.get("inbounds", []):

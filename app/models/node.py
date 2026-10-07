@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Literal, Optional
 
-from pydantic import ConfigDict, BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field, model_validator
 
 
 class NodeStatus(str, Enum):
@@ -87,18 +87,28 @@ class NodeEgressResponse(BaseModel):
 
 class NodeRelayModify(BaseModel):
     mode: Literal["direct", "relay"]
-    source: Literal["main"] = "main"
+    source: Literal["main", "node"] = "main"
+    source_node_id: Optional[int] = Field(None, gt=0, strict=True)
     entry_address: Optional[str] = Field(None, max_length=253)
     allocation: Literal["auto", "manual"] = "auto"
     listen_port: Optional[int] = Field(None, ge=1024, le=65535, strict=True)
     inbound_tag: Optional[str] = Field(None, max_length=256)
     model_config = ConfigDict(extra="forbid")
 
+    @model_validator(mode="after")
+    def validate_source(self):
+        if self.source == "node" and self.source_node_id is None:
+            raise ValueError("Choose a source Node")
+        if self.source == "main" and self.source_node_id is not None:
+            raise ValueError("Main-server relay cannot include source_node_id")
+        return self
+
 
 class NodeRelayResponse(BaseModel):
     configured: bool
     mode: Literal["direct", "relay"] = "direct"
-    source: Literal["main"] = "main"
+    source: Literal["main", "node"] = "main"
+    source_node_id: Optional[int] = None
     entry_address: Optional[str] = None
     allocation: Literal["auto", "manual"] = "auto"
     listen_port: Optional[int] = None

@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlsplit, unquote
 
 import test_user_device_limit as bootstrap
 from alembic.migration import MigrationContext
@@ -32,11 +32,19 @@ from app.xray import node_relay_service as service
 from app.xray.config import XRayConfig
 from app.xray.node_relay import (
     RelayProcess, business_inbounds, choose_port, clean_address, config_ports,
-    make_config, subscription_host,
+    make_config, host_target, rewrite_hosts,
 )
 
 TAG = "VLESS TCP REALITY"
 UUID = "35e4e39c-7d5c-4f4b-8b71-558e4f37ff53"
+
+
+def original_host(remark, address, port=None, **overrides):
+    return {"remark": remark, "address": [address], "port": port,
+            "path": None, "sni": [], "host": [], "tls": None,
+            "alpn": "", "fingerprint": "", "allowinsecure": False,
+            "mux_enable": False, "fragment_setting": None, "noise_setting": None,
+            "random_user_agent": False, "use_sni_as_host": False, **overrides}
 
 
 def config():
@@ -118,9 +126,27 @@ class RelayHelpersTests(unittest.TestCase):
             self.assertFalse(inbound["sniffing"]["enabled"])
             self.assertNotIn("clients", inbound["settings"])
 
-    def test_node_name_is_not_interpreted_as_a_format_variable(self):
-        host = subscription_host({"name": "US-{USERNAME}", "entry_address": "hk.test", "listen_port": 18443})
-        self.assertEqual(host["remark"].format_map({"USERNAME": "secret"}), "US-{USERNAME} (Relay)")
+    def test_rewrite_preserves_original_alias_templates_and_all_host_overrides(self):
+        host = original_host("Original-{USERNAME}", "node.test", sni=["custom.example.com"],
+                             fingerprint="edge", alpn="h2", mux_enable=True)
+        profile = {"name": "Different-admin-name", "target_address": "node.test", "target_port": 8443,
+                   "entry_address": "main.test", "listen_port": 18443}
+        result = rewrite_hosts([host], [profile], 8443)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], {**host, "address": ["main.test"], "port": 18443})
+        self.assertEqual(result[0]["remark"].format_map({"USERNAME": "client"}), "Original-client")
+        self.assertEqual(host["address"], ["node.test"])
+        self.assertIsNone(host["port"])
+
+    def test_host_matching_is_normalized_exact_and_never_resolves_or_splits_addresses(self):
+        self.assertEqual(host_target(original_host("Name", " NODE.TEST. "), 8443), ("node.test", 8443))
+        for addresses in (["node.test", "other.test"], ["{SERVER_IP}"], [], ["*.node.test"]):
+            self.assertIsNone(host_target({"address": addresses}, 8443))
+        host = original_host("Node", "node.test")
+        profile = {"target_address": "node.test", "target_port": 8443,
+                   "entry_address": "main.test", "listen_port": 18443}
+        self.assertEqual(rewrite_hosts([host], [profile, {**profile, "listen_port": 18444}], 8443), [host])
+        self.assertEqual(rewrite_hosts([host], [{**profile, "target_port": 8444}], 8443), [host])
 
     def test_invalid_config_leaves_existing_runtime_and_records_reason(self):
         runtime = RelayProcess("unused", ".")
@@ -148,10 +174,16 @@ class RelayStoreTests(unittest.TestCase):
         Base.metadata.create_all(self.engine)
         self.db = sessionmaker(bind=self.engine)()
         self.runtime = FakeRuntime()
+        self.remotes = {}
         self.conf = config()
+        self.hosts = {TAG: [original_host("Main direct", "main-direct.example.com", 8443),
+                           original_host("🚀 Node 01 original", "us01.example.com", 8443),
+                           original_host("🚀 Node 02 original", "us02.example.com", 8443)]}
         self.patches = [patch.object(service, "runtime", self.runtime),
                         patch.object(service, "_published", []), patch.object(service, "_errors", {}),
-                        patch.object(service.xray, "config", self.conf)]
+                        patch.object(service.xray, "config", self.conf),
+                        patch.object(service.xray, "nodes", self.remotes), patch.object(service, "_remote_live", {}),
+                        patch.object(service.xray, "hosts", self.hosts)]
         for item in self.patches:
             item.start()
         self.node = Node(name="US-01", address="us01.example.com", port=62050, api_port=62051, status=NodeStatus.connected)
@@ -181,12 +213,183 @@ class RelayStoreTests(unittest.TestCase):
         self.assertEqual(self.db.query(TLS).one().certificate, "existing-cert")
         self.assertEqual((self.node.port, self.node.api_port), (62050, 62051))
 
+    def remote(self, source=None):
+        source = source or self.node
+        class Remote:
+            def __init__(self):
+                self.profiles, self.fail, self.bad_ack, self.started, self.supported = [], False, False, True, True
+                self.occupied, self.calls = set(), []
+            def get_relay_status(self):
+                return {"capability": service.CAPABILITY if self.supported else "old-node",
+                        "core_started": self.started, "running": bool(self.profiles),
+                        "profiles": copy.deepcopy(self.profiles), "occupied_ports": sorted(self.occupied)}
+            def set_relays(self, profiles):
+                self.calls.append(copy.deepcopy(profiles))
+                if self.fail:
+                    raise RuntimeError("remote source unreachable")
+                self.profiles = copy.deepcopy(profiles)
+                result = self.get_relay_status()
+                if self.bad_ack:
+                    result["profiles"] = []
+                return result
+        remote = Remote()
+        self.remotes[source.id] = remote
+        return remote
+
+    def via_node(self, target=None, source=None, **changes):
+        values = {"source": "node", "source_node_id": (source or self.node).id,
+                  "entry_address": "relay-node.example.com", **changes}
+        return self.enable(target or self.second, **values)
+
+    def test_node_source_applies_only_source_and_keeps_original_subscription_alias(self):
+        remote = self.remote()
+        result = self.via_node()
+        self.assertEqual(result["source_node_id"], self.node.id)
+        self.assertEqual(result["status"], "running")
+        self.assertEqual(self.runtime.profiles, [])
+        self.assertEqual(remote.profiles, [{"node_id": self.second.id, "listen_port": 18443,
+                                         "target_address": self.second.address, "target_port": 8443}])
+        hosts = service.subscription_hosts(TAG)
+        self.assertEqual(len(hosts), 3)
+        self.assertEqual(hosts[2]["remark"], self.hosts[TAG][2]["remark"])
+        self.assertEqual(hosts[2]["address"], ["relay-node.example.com"])
+        self.assertEqual(hosts[:2], self.hosts[TAG][:2])
+        self.assertEqual(self.node.port, 62050)
+
+    def test_switch_node_to_main_to_direct_cleans_old_source(self):
+        remote = self.remote()
+        self.via_node()
+        self.enable(self.second)
+        self.assertEqual(remote.profiles, [])
+        self.assertEqual(len(self.runtime.profiles), 1)
+        self.assertEqual(service.public(self.second)["source"], "main")
+        service.save(self.db, self.second, NodeRelayModify(mode="direct"))
+        self.assertEqual(self.runtime.profiles, [])
+        self.assertEqual(service.subscription_hosts(TAG), self.hosts[TAG])
+
+    def test_source_local_port_scan_and_current_port_reuse(self):
+        remote = self.remote()
+        remote.occupied = {18443, 18444}
+        self.runtime.occupied = {18445}
+        self.assertEqual(self.via_node()["listen_port"], 18445)
+        self.assertEqual(self.via_node()["listen_port"], 18445)
+        with self.assertRaises(ValueError):
+            self.via_node(allocation="manual", listen_port=18443)
+
+    def test_self_missing_disabled_old_and_offline_sources_rejected(self):
+        remote = self.remote()
+        with self.assertRaisesRegex(ValueError, "itself"):
+            self.via_node(target=self.node)
+        remote.supported = False
+        with self.assertRaisesRegex(ValueError, "Update"):
+            self.via_node()
+        remote.supported = True
+        remote.started = False
+        with self.assertRaisesRegex(ValueError, "not started"):
+            self.via_node()
+        remote.started = True
+        self.node.status = NodeStatus.disabled
+        self.db.commit()
+        with self.assertRaisesRegex(ValueError, "connected"):
+            self.via_node()
+        self.assertEqual(self.db.query(NodeRelay).count(), 0)
+
+    def test_node_cycle_rejected_before_applying_any_snapshot(self):
+        first, second = self.remote(), self.remote(self.second)
+        self.via_node()
+        previous = copy.deepcopy(first.profiles)
+        with self.assertRaisesRegex(ValueError, "cycle"):
+            self.via_node(target=self.node, source=self.second)
+        self.assertEqual(first.profiles, previous)
+        self.assertEqual(second.calls, [])
+        self.assertEqual(self.db.query(NodeRelay).count(), 1)
+
+    def test_bad_ack_and_db_failure_do_not_publish_new_remote_endpoint(self):
+        remote = self.remote()
+        remote.bad_ack = True
+        with self.assertRaisesRegex(RuntimeError, "acknowledgement"):
+            self.via_node()
+        self.assertEqual(service.relay_profiles(TAG), [])
+        self.assertEqual(self.db.query(NodeRelay).count(), 0)
+        remote.bad_ack = False
+        with patch.object(self.db, "commit", side_effect=RuntimeError("database unavailable")):
+            with self.assertRaisesRegex(RuntimeError, "database unavailable"):
+                self.via_node()
+        self.assertEqual(remote.profiles, [])
+        self.assertEqual(self.db.query(NodeRelay).count(), 0)
+        self.assertEqual(service.relay_profiles(TAG), [])
+
+    def test_periodic_node_recovery_and_failure_isolation(self):
+        remote = self.remote()
+        self.via_node()
+        remote.profiles = []
+        with patch.object(service, "GetDB") as context:
+            context.return_value.__enter__.return_value = self.db
+            service.refresh()
+            self.assertEqual(service.public(self.second)["status"], "running")
+            remote.fail = True
+            remote.profiles = []
+            service.refresh()
+        self.assertEqual(service.public(self.second)["status"], "error")
+        self.assertEqual(service.subscription_hosts(TAG), self.hosts[TAG])
+
+    def test_remote_configuration_is_cleared_when_target_disabled_or_deleted(self):
+        remote = self.remote()
+        self.via_node()
+        self.second.status = NodeStatus.disabled
+        self.db.commit()
+        with patch.object(service, "GetDB") as context:
+            context.return_value.__enter__.return_value = self.db
+            service.refresh()
+        self.assertEqual(remote.profiles, [])
+        self.assertEqual(service.public(self.second)["status"], "inactive")
+
+    def test_node_to_another_node_source_switch_cleans_previous_source(self):
+        third = Node(name="Node-03", address="node3.test", port=3050, api_port=3051, status=NodeStatus.connected)
+        self.db.add(third)
+        self.db.commit()
+        first, other = self.remote(), self.remote(third)
+        self.via_node()
+        self.via_node(source=third, entry_address="node3.test")
+        self.assertEqual(first.profiles, [])
+        self.assertEqual(other.profiles[0]['node_id'], self.second.id)
+        self.assertEqual(service.subscription_hosts(TAG)[2]['remark'], self.hosts[TAG][2]['remark'])
+        self.assertEqual(service.subscription_hosts(TAG)[2]['address'], ['node3.test'])
+
+    def test_deleted_source_fails_explicitly_without_publishing_stale_endpoint(self):
+        self.remote()
+        self.via_node()
+        source_id = self.node.id
+        self.db.delete(self.node)
+        self.db.commit()
+        self.db.expire_all()
+        self.remotes.pop(source_id)
+        with patch.object(service, "GetDB") as context:
+            context.return_value.__enter__.return_value = self.db
+            service.refresh()
+        self.assertEqual(service.public(self.second)['status'], 'error')
+        self.assertIn('missing', service.public(self.second)['error'])
+        self.assertEqual(service.subscription_hosts(TAG), self.hosts[TAG])
+
     def test_existing_listeners_and_proxy_control_ports_are_not_overwritten(self):
         self.runtime.occupied = {18443}
         self.assertEqual(self.enable()["listen_port"], 18444)
         for port in (8443, 62050, 62051, 2050, 2051, 18443):
             with self.subTest(port=port), self.assertRaises(ValueError):
                 self.enable(allocation="manual", listen_port=port)
+
+    def test_unrelated_failed_source_does_not_block_another_targets_save(self):
+        remote = self.remote()
+        self.via_node()
+        remote.fail = True
+        remote.get_relay_status = lambda: (_ for _ in ()).throw(RuntimeError('offline unrelated source'))
+        third = Node(name="Third", address="third.test", port=4050, api_port=4051, status=NodeStatus.connected)
+        self.db.add(third)
+        self.db.commit()
+        self.hosts[TAG].append(original_host('Third original alias', 'third.test', 8443))
+        self.assertEqual(self.enable(third)['status'], 'running')
+        self.assertEqual(len(remote.calls), 1)
+        self.assertEqual(self.db.query(NodeRelay).count(), 2)
 
     def test_switch_direct_only_removes_that_nodes_relay(self):
         self.enable()
@@ -195,7 +398,7 @@ class RelayStoreTests(unittest.TestCase):
         self.assertEqual(result["mode"], "direct")
         self.assertEqual(self.db.query(Node).count(), 2)
         self.assertEqual(self.db.query(NodeRelay).one().node_id, self.second.id)
-        self.assertEqual(len(service.subscription_hosts(TAG)), 1)
+        self.assertEqual(len(service.relay_profiles(TAG)), 1)
 
     def test_disable_delete_and_invalid_inbound_remove_virtual_host(self):
         self.enable()
@@ -206,7 +409,7 @@ class RelayStoreTests(unittest.TestCase):
         self.runtime.apply(profiles)
         service._publish(profiles)
         self.assertEqual(service.public(self.node)["status"], "inactive")
-        self.assertEqual(len(service.subscription_hosts(TAG)), 1)
+        self.assertEqual(len(service.relay_profiles(TAG)), 1)
         self.db.delete(self.second)
         self.db.commit()
         self.assertEqual(self.db.query(NodeRelay).count(), 1)
@@ -238,7 +441,7 @@ class RelayStoreTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "bind failure"):
             self.enable(allocation="manual", listen_port=20001)
         self.assertEqual(self.node.relay.listen_port, old["listen_port"])
-        self.assertEqual(service.subscription_hosts(TAG)[0]["port"], old["listen_port"])
+        self.assertEqual(service.relay_profiles(TAG)[0]["listen_port"], old["listen_port"])
 
     def test_failed_db_commit_restores_previous_runtime_and_settings(self):
         old = self.enable()
@@ -247,18 +450,18 @@ class RelayStoreTests(unittest.TestCase):
                 self.enable(allocation="manual", listen_port=20001)
         self.assertEqual(self.node.relay.listen_port, old["listen_port"])
         self.assertEqual(self.runtime.profiles[0]["listen_port"], old["listen_port"])
-        self.assertEqual(service.subscription_hosts(TAG)[0]["port"], old["listen_port"])
+        self.assertEqual(service.relay_profiles(TAG)[0]["listen_port"], old["listen_port"])
 
     def test_stopped_process_is_not_advertised(self):
         self.enable()
         self.runtime.stop()
-        self.assertEqual(service.subscription_hosts(TAG), [])
+        self.assertEqual(service.relay_profiles(TAG), [])
 
     def test_runtime_rollback_cannot_advertise_an_unapplied_new_destination(self):
         self.enable()
         profiles, _ = service._plans(self.db)
         service._publish([{**profiles[0], "target_address": "changed.example.com"}])
-        self.assertEqual(service.subscription_hosts(TAG), [])
+        self.assertEqual(service.relay_profiles(TAG), [])
 
     def test_periodic_refresh_recovers_after_runtime_loss_and_isolates_invalid_node(self):
         self.enable()
@@ -279,53 +482,125 @@ class RelayStoreTests(unittest.TestCase):
         user = SimpleNamespace(username="device-client", used_traffic=0, status="active",
                                proxies={ProxyTypes.VLESS: VLESSSettings(id=private, flow="xtls-rprx-vision")},
                                inbounds={ProxyTypes.VLESS: [TAG]})
-        with patch.object(service.xray, "hosts", {TAG: []}):
-            for fmt in ("v2ray", "v2ray-json", "clash-meta", "sing-box"):
-                with self.subTest(fmt=fmt):
-                    rendered = generate_subscription(user, fmt, False, False)
-                    self.assertIn(private, rendered)
-                    self.assertNotIn(UUID, rendered)
-                    self.assertIn("xtls-rprx-vision", rendered)
+        for fmt in ("v2ray", "v2ray-json", "clash-meta", "sing-box"):
+            with self.subTest(fmt=fmt):
+                rendered = generate_subscription(user, fmt, False, False)
+                self.assertIn(private, rendered)
+                self.assertNotIn(UUID, rendered)
+                self.assertIn("xtls-rprx-vision", rendered)
+                self.assertNotIn("(Relay)", rendered)
 
     def test_repeated_manual_save_and_direct_toggle_never_duplicates_virtual_hosts(self):
         for _ in range(10):
             result = self.enable(allocation="manual", listen_port=21001)
             self.assertEqual(result["listen_port"], 21001)
-            self.assertEqual(len(service.subscription_hosts(TAG)), 1)
+            self.assertEqual(len(service.relay_profiles(TAG)), 1)
             self.assertEqual(self.db.query(NodeRelay).count(), 1)
             service.save(self.db, self.node, NodeRelayModify(mode="direct"))
-            self.assertEqual(service.subscription_hosts(TAG), [])
+            self.assertEqual(service.relay_profiles(TAG), [])
             self.assertEqual(self.db.query(NodeRelay).count(), 0)
 
     def test_subscription_keeps_direct_host_credentials_reality_keys_and_sni(self):
-        self.enable()
-        direct = {**subscription_host({"name": "Hong Kong", "entry_address": "hk-direct.example.com", "listen_port": 8443}), "remark": "Hong Kong direct"}
+        self.hosts[TAG][1].update(sni=["www.example.com"], fingerprint="edge")
+        original = copy.deepcopy(self.hosts)
         user = SimpleNamespace(username="client", used_traffic=0, status="active", proxies={ProxyTypes.VLESS: VLESSSettings(id=UUID, flow="")}, inbounds={ProxyTypes.VLESS: [TAG]})
-        with patch.object(service.xray, "hosts", {TAG: [direct]}):
-            links = generate_subscription(user, "v2ray", False, False).splitlines()
-            self.assertEqual(len(links), 2)
-            urls = [urlsplit(link) for link in links]
-            self.assertEqual([(url.hostname, url.port) for url in urls], [("hk-direct.example.com", 8443), ("hk.example.com", 18443)])
-            for url in urls:
-                self.assertEqual(url.username, UUID)
-                params = parse_qs(url.query)
-                self.assertEqual(params["security"], ["reality"])
-                self.assertEqual(params["sni"], ["www.example.com"])
-                self.assertEqual(params["pbk"], ["public-test-key"])
-            for fmt in ("v2ray-json", "clash-meta", "sing-box"):
-                with self.subTest(fmt=fmt):
-                    rendered = generate_subscription(user, fmt, False, False)
-                    self.assertIn("hk-direct.example.com", rendered)
-                    self.assertIn("hk.example.com", rendered)
-                    self.assertIn(UUID, rendered)
-                    self.assertIn("public-test-key", rendered)
-                    self.assertIn("www.example.com", rendered)
-                    self.assertNotIn("private-test-key", rendered)
-            # Existing formats which cannot express REALITY retain their prior
-            # behavior, not a promise of protocol support in all clients.
-            for fmt in ("clash", "outline"):
-                generate_subscription(user, fmt, False, False)
-        self.assertEqual(direct["port"], 8443)
+        before = [urlsplit(link) for link in generate_subscription(user, "v2ray", False, False).splitlines()]
+        self.enable()
+        urls = [urlsplit(link) for link in generate_subscription(user, "v2ray", False, False).splitlines()]
+        self.assertEqual(len(urls), 3)
+        self.assertEqual([(url.hostname, url.port) for url in urls], [("main-direct.example.com", 8443), ("hk.example.com", 18443), ("us02.example.com", 8443)])
+        self.assertEqual([unquote(url.fragment) for url in urls], [host["remark"] for host in original[TAG]])
+        for old, url in zip(before, urls):
+            self.assertEqual(url.username, UUID)
+            self.assertEqual(parse_qs(url.query), parse_qs(old.query))
+            params = parse_qs(url.query)
+            self.assertEqual(params["security"], ["reality"])
+            self.assertEqual(params["sni"], ["www.example.com"])
+            self.assertEqual(params["pbk"], ["public-test-key"])
+            self.assertEqual(params["sid"], ["1234"])
+        self.assertEqual(parse_qs(urls[1].query)["fp"], ["edge"])
+        for fmt in ("v2ray-json", "clash-meta", "sing-box"):
+            with self.subTest(fmt=fmt):
+                rendered = generate_subscription(user, fmt, False, False)
+                for value in ("main-direct.example.com", "hk.example.com", "us02.example.com", UUID, "public-test-key", "www.example.com"):
+                    self.assertIn(value, rendered)
+                self.assertNotIn("us01.example.com", rendered)
+                self.assertNotIn("(Relay)", rendered)
+                self.assertNotIn("private-test-key", rendered)
+        for fmt in ("clash", "outline"):
+            generate_subscription(user, fmt, False, False)
+        self.assertEqual(self.hosts, original)
+        self.assertNotIn("sid", self.conf.inbounds_by_tag[TAG])
+
+    def test_original_count_and_aliases_survive_two_relays_and_direct_restore(self):
+        baseline = copy.deepcopy(self.hosts[TAG])
+        self.enable(self.second)
+        hosts = service.subscription_hosts(TAG)
+        self.assertEqual(len(hosts), 3)
+        self.assertEqual(hosts[:2], baseline[:2])
+        self.assertEqual(hosts[2], {**baseline[2], "address": ["hk.example.com"], "port": 18443})
+        self.enable()
+        hosts = service.subscription_hosts(TAG)
+        self.assertEqual([host["remark"] for host in hosts], [host["remark"] for host in baseline])
+        self.assertEqual([host["port"] for host in hosts], [8443, 18444, 18443])
+        service.save(self.db, self.second, NodeRelayModify(mode="direct"))
+        self.assertEqual(service.subscription_hosts(TAG)[2], baseline[2])
+        self.runtime.stop()
+        self.assertEqual(service.subscription_hosts(TAG), baseline)
+        self.assertEqual(self.hosts[TAG], baseline)
+
+    def test_multiple_original_aliases_are_preserved_without_new_entries(self):
+        self.hosts[TAG].append(original_host("Second alias {USERNAME}", "us01.example.com"))
+        self.enable()
+        hosts = service.subscription_hosts(TAG)
+        self.assertEqual(len(hosts), 4)
+        self.assertEqual(hosts[1]["address"], hosts[3]["address"])
+        self.assertEqual(hosts[3]["remark"], "Second alias {USERNAME}")
+
+    def test_unmatched_original_host_rejected_without_db_or_runtime_mutation(self):
+        for host in (original_host("Alternate", "alternate.example.com"),
+                     original_host("Wrong port", "us01.example.com", 8444),
+                     {**original_host("Mixed", "us01.example.com"), "address": ["us01.example.com", "us02.example.com"]}):
+            with self.subTest(host=host):
+                self.hosts[TAG][1] = host
+                status, _ = self.request("PUT", f"/api/node/{self.node.id}/relay", {"mode": "relay", "entry_address": "main.example.com", "inbound_tag": TAG})
+                self.assertEqual(status, 422)
+                self.assertEqual(self.db.query(NodeRelay).count(), 0)
+                self.assertEqual(self.runtime.profiles, [])
+
+    def test_ambiguous_nodes_rejected_before_overwriting_original_endpoint(self):
+        self.enable()
+        baseline = self.runtime.snapshot()
+        self.second.address = self.node.address
+        self.db.commit()
+        with self.assertRaisesRegex(ValueError, "Multiple Nodes"):
+            self.enable(self.second)
+        self.assertEqual(self.db.query(NodeRelay).count(), 1)
+        self.assertEqual(self.runtime.snapshot(), baseline)
+
+    def test_removed_original_host_is_not_recreated_by_periodic_recovery(self):
+        self.enable()
+        self.hosts[TAG].pop(1)
+        with patch.object(service, "GetDB") as context:
+            context.return_value.__enter__.return_value = self.db
+            service.refresh()
+        self.assertEqual(service.public(self.node)["status"], "error")
+        self.assertEqual(service.relay_profiles(TAG), [])
+        self.assertEqual(service.subscription_hosts(TAG), self.hosts[TAG])
+        self.assertEqual(len(service.subscription_hosts(TAG)), 2)
+
+    def test_old_ambiguous_relay_rows_fail_closed_with_explicit_reason(self):
+        self.enable()
+        self.enable(self.second)
+        self.second.address = self.node.address
+        self.db.commit()
+        with patch.object(service, "GetDB") as context:
+            context.return_value.__enter__.return_value = self.db
+            service.refresh()
+        self.assertEqual(service.subscription_hosts(TAG), self.hosts[TAG])
+        for node in (self.node, self.second):
+            self.assertEqual(service.public(node)["status"], "error")
+            self.assertIn("Multiple Nodes", service.public(node)["error"])
 
     def request(self, method, url, body=None, authorized=True):
         app = FastAPI()
@@ -369,6 +644,25 @@ class RelayStoreTests(unittest.TestCase):
 
 
 class RelayMigrationTests(unittest.TestCase):
+    def test_source_migration_preserves_existing_main_relay_and_user_data(self):
+        root = Path(__file__).resolve().parents[1]
+        spec = importlib.util.spec_from_file_location("relay_source_migration", root / "app/db/migrations/versions/9012ab34cd56_add_relay_source.py")
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
+        engine = create_engine("sqlite:///:memory:")
+        with engine.begin() as conn:
+            conn.execute(text("CREATE TABLE nodes (id INTEGER PRIMARY KEY, name TEXT)"))
+            conn.execute(text("INSERT INTO nodes VALUES (1, 'keep-source')"))
+            conn.execute(text("CREATE TABLE node_relays (node_id INTEGER PRIMARY KEY REFERENCES nodes(id), entry_address VARCHAR(253) NOT NULL, listen_port INTEGER NOT NULL UNIQUE, inbound_tag VARCHAR(256) NOT NULL, allocation VARCHAR(8) NOT NULL)"))
+            conn.execute(text("INSERT INTO node_relays VALUES (1, 'main.test', 18443, 'REALITY', 'auto')"))
+            with patch.object(migration, "op", Operations(MigrationContext.configure(conn))):
+                migration.upgrade()
+                self.assertEqual(conn.execute(text("SELECT source, source_node_id FROM node_relays")).one(), ("main", None))
+                migration.downgrade()
+            self.assertEqual(conn.execute(text("SELECT entry_address FROM node_relays")).scalar(), "main.test")
+            self.assertEqual(conn.execute(text("SELECT name FROM nodes")).scalar(), "keep-source")
+        engine.dispose()
+
     def test_migration_chain_has_one_additive_head(self):
         # Use the already isolated application bootstrap: historical migration
         # modules import crypto through app and otherwise require a production
@@ -379,7 +673,8 @@ class RelayMigrationTests(unittest.TestCase):
         settings = Config(str(root / "alembic.ini"))
         settings.set_main_option("script_location", str(root / "app/db/migrations"))
         script = ScriptDirectory.from_config(settings)
-        self.assertEqual(script.get_heads(), ["8f9012ab34cd"])
+        self.assertEqual(script.get_heads(), ["9012ab34cd56"])
+        self.assertEqual(script.get_revision("9012ab34cd56").down_revision, "8f9012ab34cd")
         self.assertEqual(script.get_revision("8f9012ab34cd").down_revision, "7e8f9012ab34")
 
     def test_upgrade_downgrade_preserve_old_rows_and_enforce_unique_port(self):

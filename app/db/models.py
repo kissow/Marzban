@@ -356,11 +356,11 @@ class Node(Base):
     usages = relationship("NodeUsage", back_populates="node", cascade="all, delete-orphan")
     usage_coefficient = Column(Float, nullable=False, server_default=text("1.0"), default=1)
     egress = relationship("NodeEgress", back_populates="node", uselist=False, cascade="all, delete-orphan")
-    relay = relationship("NodeRelay", back_populates="node", uselist=False, cascade="all, delete-orphan")
+    relay = relationship("NodeRelay", back_populates="node", foreign_keys="NodeRelay.node_id", uselist=False, cascade="all, delete-orphan")
 
 
 class NodeRelay(Base):
-    """Optional independent TCP ingress on the main server, one per Node."""
+    """Optional independent TCP ingress on main or a source Node, one per target."""
     __tablename__ = "node_relays"
     __table_args__ = (UniqueConstraint("listen_port", name="uq_node_relays_listen_port"),)
     node_id = Column(Integer, ForeignKey("nodes.id", ondelete="CASCADE"), primary_key=True)
@@ -368,7 +368,10 @@ class NodeRelay(Base):
     listen_port = Column(Integer, nullable=False)
     inbound_tag = Column(String(256), nullable=False)
     allocation = Column(String(8), nullable=False, default="auto", server_default="auto")
-    node = relationship("Node", back_populates="relay")
+    source = Column(String(8), nullable=False, default="main", server_default="main")
+    source_node_id = Column(Integer, ForeignKey("nodes.id", ondelete="SET NULL"), nullable=True)
+    node = relationship("Node", back_populates="relay", foreign_keys=[node_id])
+    source_node = relationship("Node", foreign_keys=[source_node_id])
 
 
 class NodeEgress(Base):

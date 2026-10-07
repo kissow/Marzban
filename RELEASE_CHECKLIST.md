@@ -1,5 +1,26 @@
 # Marzban 主面板发布清单
 
+## MR-20261008-NODE-RELAY-SOURCES（本地开发，未发布）
+
+本轮最终本地证据：主控164/164与Node60/60各连续两轮，含真实固定Xray实测、REST ASGI与本地RPyC序列化，无跳过；前端47/47、TypeScript/Vite、pip check、语法编译及三仓库diff检查通过。实际原组件UI截图被浏览器安全策略阻断，LinuxCI/双架构镜像/真实服务器联调尚未执行，不标稳定版。
+
+连接方式改为原Chakra独立管理弹窗；信息图标悬停/键盘/手机点击说明，四语言补齐。新增主服务器或源Node中转到目标Node，原订阅别名/数量保留，不新增Relay条目。来源切换清理旧监听；自转发/环路/端口占用、能力/完整ACK和失败回滚校验；保存仅应用受影响来源，不被无关离线来源拖住。目标认证/出口保持，固定Xray v26.3.27，证书/控制API端口/用户数据不改。
+
+管理API增加source=main/node、source_node_id、options来源列表；additive迁移9012ab34cd56保持旧行main。Node新增managed-node-relay-v1与原认证REST/RPyC快照，需配对发布并先更新承担来源的Node；仅作目标的既有配对Node不强制更新。scripts运行时代码不变、配对文档更新。
+
+本轮仍未提交推送、Linux CI/新镜像/服务器验收待执行，不能执行update取得尚未发布的功能。原组件实际截图被浏览器安全策略阻断，不用静态检查代替视觉验收。[完整接口、协议、范围、升级和回滚](docs/NODE_RELAY_SOURCES.md)。下方2026-10-07“Node→Node未实现/Node无需更新”只属于当时阶段。
+
+
+## MR-20261007-RELAY-INTERNAL-SUBSCRIPTION（本地测试完成，未发布）
+
+- [x] 原别名/条目数、双Node/直连恢复/十轮保存、参数/HWID凭据、匹配/歧义/回滚与首次short ID回归。
+- [x] 最终代码后端两轮149/149，含两项固定Xray真实进程；前端45/45、TypeScript/Vite、pip check、固定入口/diff通过。既有utcnow/Pydantic弃用与大chunk警告非零失败。
+- [x] README/功能/更新/接口/流程与工作区05/08/09登记；Node/scripts无变更、不需更新。
+- [ ] 原组件实际预览审阅（前次浏览器策略阻止，未绕过），授权推送、Linux CI、镜像构建/双架构验证。
+- [ ] 服务器更新、客户端刷新旧项/别名数量/出口/持续访问验收。用户已报告旧Relay可用，不代替本轮验收。
+
+[本轮合同和边界](docs/NODE_RELAY_SUBSCRIPTION.md)。Node→Node仅可行性说明，未实现。
+
 ## MR-20261007-NODE-RELAY（镜像已发布，服务器待验收）
 
 - [x] 原 Chakra 局部修改，证书/端口/倍率/主题/健康/出口保留；独立 TCP 中转与专用记录、订阅/原凭据保留。

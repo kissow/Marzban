@@ -1,5 +1,18 @@
 # Mr.shaw Fork 更新、接口与验收登记
 
+## MR-20261008-NODE-RELAY-SOURCES（本地开发，未发布）
+
+连接方式改为原Chakra独立管理弹窗；信息图标悬停/键盘/手机点击说明，四语言补齐。新增主服务器或源Node中转到目标Node，原订阅别名/数量保留，不新增Relay条目。来源切换清理旧监听；自转发/环路/端口占用、能力/完整ACK和失败回滚校验；保存仅应用受影响来源，不被无关离线来源拖住。目标认证/出口保持，固定Xray v26.3.27，证书/控制API端口/用户数据不改。
+
+管理API增加source=main/node、source_node_id、options来源列表；additive迁移9012ab34cd56保持旧行main。Node新增managed-node-relay-v1与原认证REST/RPyC快照，需配对发布并先更新承担来源的Node；仅作目标的既有配对Node不强制更新。scripts运行时代码不变、配对文档更新。
+
+本轮仍未提交推送、Linux CI/新镜像/服务器验收待执行，不能执行update取得尚未发布的功能。原组件实际截图被浏览器安全策略阻断，不用静态检查代替视觉验收。[完整接口、协议、范围、升级和回滚](NODE_RELAY_SOURCES.md)。下方2026-10-07“Node→Node未实现/Node无需更新”只属于当时阶段。
+
+
+## MR-20261007-RELAY-INTERNAL-SUBSCRIPTION（本地完成，未发布）
+
+订阅按原 Host 精确匹配，仅换地址/端口，不追加中转条目或重命名。原存储和转发保持，short ID 使用输出副本；API新增校验不新增字段/迁移。最终后端149/149两轮、前端45/45、类型/构建/依赖/diff通过。Node/scripts无变化，不需服务器更新。Node→Node作为后续扩展，当前source仍仅main。公开文档和工作区05/08/09已更新；本次尚未推送/构建/验收，不复用d2350203旧镜像作为修复证据。[合同和发布门槛](NODE_RELAY_SUBSCRIPTION.md)。
+
 ## MR-20261007-NODE-RELAY（镜像已发布，服务器待验收）
 
 开源文档统一使用“Marzban 主服务器中转到 Node 节点”，不将主服务器所在地区作为前提。配置、拓扑、示例、安装、测速和验收均以主服务器/目标Node说明；示例域名使用main.example.com等通用占位，不绑定特定维护者或国家/地区。

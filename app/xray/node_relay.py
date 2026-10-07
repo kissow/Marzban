@@ -1,7 +1,7 @@
 """Fixed-destination TCP relay using the bundled Xray, not a shared proxy account.
 
-No core version upgrade or Node control-channel change is required. This module
-is deliberately independent of app/database imports for real-process testing.
+Uses the pinned bundled core through an independent process. Control-channel
+authorization is handled by the caller; this module has no app/database imports.
 """
 import ipaddress
 import json
@@ -84,16 +84,44 @@ def make_config(profiles, listen="0.0.0.0"):
     }
 
 
-def subscription_host(profile):
-    # Escape node-name braces; this is not a user-provided format string.
-    name = profile["name"].replace("{", "{{").replace("}", "}}")
-    return {
-        "remark": name + " (Relay)", "address": [profile["entry_address"]],
-        "port": profile["listen_port"], "path": None, "sni": [], "host": [],
-        "tls": None, "alpn": "", "fingerprint": "", "allowinsecure": False,
-        "mux_enable": False, "fragment_setting": None, "noise_setting": None,
-        "random_user_agent": False, "use_sni_as_host": False,
-    }
+def host_target(host, default_port):
+    """Match original Hosts without DNS lookups or guessing by display name.
+
+    A mixed-address load-balancing host cannot safely acquire one relay port.
+    Templates and alternate business domains are not guessed as a Node identity.
+    """
+    addresses = host.get("address") or []
+    if not isinstance(addresses, (list, tuple)) or not addresses:
+        return None
+    try:
+        normalized = {clean_address(address) for address in addresses}
+    except (ValueError, TypeError, AttributeError):
+        return None
+    if len(normalized) != 1:
+        return None
+    return (normalized.pop(), host.get("port") or default_port)
+
+
+def rewrite_hosts(hosts, profiles, default_port):
+    """Switch original entries internally; never append or rename a Host.
+
+    Preserve per-host SNI/fingerprint/transport overrides and all user credentials.
+    Copy address/port only, leaving persisted Hosts and other Node entries intact.
+    Ambiguous destinations fail closed to the original direct configuration.
+    """
+    from collections import defaultdict
+    destinations = defaultdict(list)
+    for profile in profiles:
+        destinations[(profile["target_address"], profile["target_port"])].append(profile)
+    result = []
+    for host in hosts:
+        matches = destinations.get(host_target(host, default_port), [])
+        if len(matches) == 1:
+            profile = matches[0]
+            result.append({**host, "address": [profile["entry_address"]], "port": profile["listen_port"]})
+        else:
+            result.append(host)
+    return result
 
 
 class RelayProcess:
