@@ -318,6 +318,7 @@ class System(Base):
     id = Column(Integer, primary_key=True)
     uplink = Column(BigInteger, default=0)
     downlink = Column(BigInteger, default=0)
+    usage_coefficient = Column(Float, nullable=False, default=1.0, server_default=text("1.0"))
 
 
 class JWT(Base):

@@ -673,7 +673,8 @@ class RelayMigrationTests(unittest.TestCase):
         settings = Config(str(root / "alembic.ini"))
         settings.set_main_option("script_location", str(root / "app/db/migrations"))
         script = ScriptDirectory.from_config(settings)
-        self.assertEqual(script.get_heads(), ["9012ab34cd56"])
+        self.assertEqual(script.get_heads(), ["a123bc45de67"])
+        self.assertEqual(script.get_revision("a123bc45de67").down_revision, "9012ab34cd56")
         self.assertEqual(script.get_revision("9012ab34cd56").down_revision, "8f9012ab34cd")
         self.assertEqual(script.get_revision("8f9012ab34cd").down_revision, "7e8f9012ab34")
 

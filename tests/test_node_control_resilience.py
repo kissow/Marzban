@@ -275,6 +275,8 @@ class UsageProbeIsolationTests(unittest.TestCase):
                 stats = Mock(return_value=[])
                 log = Mock()
                 namespace = {"xray": runtime, "logger": log, "ThreadPoolExecutor": ThreadPoolExecutor,
+                             "get_main_usage_coefficient": lambda: 1,
+                             "charge_main_usage": lambda params, coefficient: params,
                              stats_name: stats, "defaultdict": __import__("collections").defaultdict,
                              "DISABLE_RECORDING_NODE_USAGE": False}
                 function = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == name)
