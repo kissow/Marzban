@@ -10,6 +10,7 @@ from app import logger, xray
 from app.db import Session, crud, get_db
 from app.dependencies import get_dbnode, validate_dates
 from app.models.admin import Admin
+from app.models.main_usage import MainUsageSettings
 from app.models.node import (
     NodeCreate,
     NodeModify,
@@ -58,6 +59,28 @@ def add_host_if_needed(new_node: NodeCreate, db: Session):
         for inbound_tag in xray.config.inbounds_by_tag:
             crud.add_host(db, inbound_tag, host)
         xray.hosts.update()
+
+
+@router.get("/node/main/usage", response_model=MainUsageSettings)
+def get_main_usage_settings(db: Session = Depends(get_db),
+                            admin: Admin = Depends(Admin.check_sudo_admin)):
+    system = crud.get_system_usage(db)
+    if system is None:
+        raise HTTPException(503, "Main usage settings are unavailable")
+    return MainUsageSettings(usage_coefficient=system.usage_coefficient)
+
+
+@router.put("/node/main/usage", response_model=MainUsageSettings)
+def update_main_usage_settings(settings: MainUsageSettings,
+                               db: Session = Depends(get_db),
+                               admin: Admin = Depends(Admin.check_sudo_admin)):
+    system = crud.get_system_usage(db)
+    if system is None:
+        raise HTTPException(503, "Main usage settings are unavailable")
+    system.usage_coefficient = settings.usage_coefficient
+    db.commit()
+    db.refresh(system)
+    return MainUsageSettings(usage_coefficient=system.usage_coefficient)
 
 
 @router.get("/node/settings", response_model=NodeSettings)

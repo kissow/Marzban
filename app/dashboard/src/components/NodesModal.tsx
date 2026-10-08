@@ -70,6 +70,7 @@ import { NodeModalStatusBadge } from "./NodeModalStatusBadge";
 import { NodeEgressCard } from "./NodeEgressCard";
 import { NodeHealthCard } from "./NodeHealthCard";
 import { NodeRelayCard } from "./NodeRelayCard";
+import { MainUsageCard } from "./MainUsageCard";
 
 import { fetch } from "service/http";
 import { Input } from "./Input";
@@ -646,6 +647,7 @@ export const NodesDialog: FC = () => {
             </Text>
             {isLoading && "loading..."}
 
+            <MainUsageCard enabled={isEditingNodes} />
             <Accordion w="full" allowMultiple index={openIndexes} onChange={onAccordionChange}>
               <VStack w="full">
                 {!isLoading &&

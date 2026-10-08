@@ -1,6 +1,7 @@
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from decimal import Decimal
 from operator import attrgetter
 from typing import Union
 
@@ -12,6 +13,7 @@ from sqlalchemy.sql.dml import Insert
 from app import logger, scheduler, xray
 from app.db import GetDB
 from app.db.models import Admin, NodeUsage, NodeUserUsage, System, User
+from app.models.main_usage import MainUsageSettings
 from config import (
     DISABLE_RECORDING_NODE_USAGE,
     JOB_RECORD_NODE_USAGES_INTERVAL,
@@ -127,7 +129,24 @@ def get_outbounds_stats(api: XRayAPI):
         return []
 
 
+def get_main_usage_coefficient():
+    # Read/validate before reset=True probes. A DB failure must not discard
+    # the accumulated counters or silently charge using a guessed multiplier.
+    with GetDB() as db:
+        system = db.query(System).first()
+        if system is None:
+            raise RuntimeError("Main usage settings are unavailable")
+        return MainUsageSettings(usage_coefficient=system.usage_coefficient).usage_coefficient
+
+
+def charge_main_usage(params, coefficient):
+    factor = Decimal(str(coefficient))
+    return [{"uid": item["uid"], "value": int(Decimal(item["value"]) * factor)}
+            for item in params]
+
+
 def record_user_usages():
+    main_coefficient = get_main_usage_coefficient()
     api_instances = {None: xray.api}
     usage_coefficient = {None: 1}  # default usage coefficient for the main api instance
 
@@ -142,6 +161,9 @@ def record_user_usages():
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {node_id: executor.submit(get_users_stats, api) for node_id, api in api_instances.items()}
     api_params = {node_id: future.result() for node_id, future in futures.items()}
+    # Scale local business traffic exactly once. The same integer bytes go to
+    # user/admin/hourly ledgers. Remote Node accounting remains unchanged.
+    api_params[None] = charge_main_usage(api_params[None], main_coefficient)
 
     users_usage = defaultdict(int)
     for node_id, params in api_params.items():
