@@ -1,7 +1,7 @@
 # 主面板本机使用系数
 
 变更编号：`MR-20261008-MAIN-USAGE-COEFFICIENT`。维护者：Mr.shaw。
-状态：本地复核完成；尚未推送本轮代码、运行 Linux CI 或发布本轮镜像。服务器验收未执行。
+状态：本轮镜像已发布并核对双架构；服务器验收未执行。仅文档回写不重建运行时镜像。
 
 ## 设置入口与范围
 
@@ -54,4 +54,34 @@ HTML 提案用原组件和主题，已获用户认可。浏览器自动视觉验
 
 开发失败复盘：新测试 Node fixture 最初漏填必填端口，补齐 fixture；网络探测 mock 最初误用用户统计结构，改成既有 up/down 合同；原 migration-head 断言需接新 additive head，保留全部旧迁移链断言；Toast onError 不能返回 ToastId，使用 void 回调；增加实际 SSR 后发现缓存初始数值仍为空，改为从已加载 query 初始化草稿并保留后续 dirty 保护。对应 API、原网络统计、迁移链、类型与 SSR 回归已通过。没有隐藏/跳过失败测试。
 
-发布提交、CI/镜像摘要和服务器验收分别登记，当前未将任何后续阶段写成已完成。
+## 本轮发布证据（2026-10-08）
+
+源提交 `6f65298e1972a5a55df44b2267cc6e8a57807022`；[PR #19](https://github.com/kissow/Marzban/pull/19) 已合入 master。运行时/镜像 revision：`15a11e9d5bdf884fa860456e3a4ae0602d6783b1`。
+[PR CI 37777207870](https://github.com/kissow/Marzban/actions/runs/37777207870) 和 [正式构建 37777455474](https://github.com/kissow/Marzban/actions/runs/37777455474) 首次成功。两轮 Linux 普通后端182项中的两项真实 Xray 在普通阶段跳过，然后显式安装固定核心，两项实际进程测试均通过；前端54/54、类型/生产构建通过。未把跳过记录作为真实测试通过。
+
+镜像：`ghcr.io/kissow/marzban:latest`；index：`sha256:ed5d2641733126431104155f62a447390767f524525e7303f5bfc46741cb5f35`。
+核对时间：2026-10-08T20:39:05.7344197+08:00；index/manifest/config均按原始字节SHA256核对，核对前后latest未改变；两架构OCI revision均为上面的运行时提交。
+
+| 平台 | manifest digest | config digest |
+| --- | --- | --- |
+| linux/amd64 | `sha256:48b1bd5652a18cfd7746f526bddc0c7f7ba0ee6e4c292ba56aed4131730bcc48` | `sha256:ebbabd599990ae21df4c3595618f8c17e2267dbd4683b49f2df215e2b90170ea` |
+| linux/arm64 | `sha256:25d7dea861a8036e2604f2943daf6df1fa4c46e8b9373227c485efda58097c91` | `sha256:9e21f75c637f1d6a60e2c6cfffec92cbe78e9fa931fcd3391bd3c5f9588de26d` |
+
+GitHub runner 提示 Action Node20切换到Node24及ubuntu-latest后续迁移；本轮均成功，不是构建错误。本轮未升级Action版本或扩大运行时变更。
+
+实际实现组件离线HTML已从同一运行时NodesDialog/MainUsageCard/原主题编译，完整四语言，1153294字节，SHA256 `7f3d90c62e116af42cd6e0633d13d9b0dd210d6f18fb7851b19815f30f3ec5fd`。它使用离线fixture，不更改服务器。实际浏览器截图、手机操作、服务器迁移/容器启动与计费仍待用户验收，不能标为稳定版。
+
+## 服务器 SSH 更新（已切换 Fork）
+
+```sh
+marzban update
+marzban status
+marzban logs --no-follow 2>&1 | tail -n 100
+docker ps --filter label=com.docker.compose.service=marzban --format '{{.ID}}' | xargs -r docker inspect --format '{{.Name}} | {{.Config.Image}} | {{index .Config.Labels "org.opencontainers.image.revision"}}'
+```
+
+预期镜像 `ghcr.io/kissow/marzban:latest`，revision `15a11e9d5bdf884fa860456e3a4ae0602d6783b1`（不要求与后续仅文档提交相同）。更新前备份，下载可能数分钟，短暂重启；不要重装或删卷。Node/scripts本轮不用更新。浏览器刷新后，在节点设置顶部保存本机系数并按前述验收流程确认；本轮没有远程操作用户服务器。
+
+## English summary
+
+The existing Node dialog now includes a separate local main-server billing setting, default 1. Only subsequent collection batches from the local business Xray API are scaled; persisted historical usage, raw network statistics, remote Node multipliers and transparent relay behavior are unchanged. Sudo-only GET/PUT `/api/node/main/usage`; additive migration `a123bc45de67`; range greater than zero through 1000 with up to five decimal places. No Node or deployment-script update is required for this feature. The image above is published and verified, but production server and browser visual acceptance remain pending. Preserve upstream licensing and existing deployment data.
