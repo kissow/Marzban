@@ -1,10 +1,10 @@
 # Marzban 开源扩展功能
 
-## MR-20261008-MAIN-USAGE-COEFFICIENT（本地复核完成，未发布）
+## MR-20261008-MAIN-USAGE-COEFFICIENT（镜像已发布，服务器验收待完成）
 
 原节点设置顶部新增独立「主面板（本机）」使用系数，默认1，范围大于0至1000、最多五位小数；只影响本机业务用户计费，不是网速倍率。已有用量不重算，Node系数/透明中转/实际网络统计保持原范围。四语言、原Chakra主题/宽度/证书/端口保留。新增sudo GET/PUT /api/node/main/usage，additive迁移a123bc45de67接9012ab34cd56；Node/scripts无本轮变化，不需更新，Xray v26.3.27不变。
 
-[接口、取整/采集边界、兼容性与验收流程](docs/MAIN_USAGE_COEFFICIENT.md)。本地后端两轮182/182，专项18/18再三轮；前端54/54（含实际组件四语言SSR）、类型/构建/依赖/diff通过。用户已认可HTML提案，自动浏览器视觉验收未执行。推送、Linux CI、镜像和服务器验收分别登记；当前尚未发布新镜像。
+[接口、取整/采集边界、兼容性与验收流程](docs/MAIN_USAGE_COEFFICIENT.md)。本地后端两轮182/182，专项18/18再三轮；前端54/54（含实际组件四语言SSR）、类型/构建/依赖/diff通过。用户已认可HTML提案，自动浏览器视觉验收未执行。源6f65298e、PR #19合并为15a11e9d5bdf884fa860456e3a4ae0602d6783b1；PR CI 37777207870与正式Actions 37777455474成功。latest index sha256:ed5d2641733126431104155f62a447390767f524525e7303f5bfc46741cb5f35，双架构manifest/config/revision核对通过。Node/scripts无需本轮更新；已切换Fork的主控用marzban update，服务器验收未执行。文档[skip ci]回写不改变运行时revision。
 
 
 ## MR-20261008-NODE-RELAY-SOURCES（镜像已发布，服务器/视觉验收待完成）
